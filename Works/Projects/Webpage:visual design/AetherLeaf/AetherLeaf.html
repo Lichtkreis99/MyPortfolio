@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherLeaf · Integrated System</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@100;300&family=Montserrat:wght@300;400;500&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+
+    <style>
+        :root {
+            --c-bg: #0a0d14; --c-accent: #45b4c4; --c-warm: #FFF3C7;
+            --font-display: "PingFang SC", "Microsoft YaHei", serif;
+            --font-sans: 'Inter', -apple-system, sans-serif;
+            --font-serif: 'Playfair Display', serif;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html {
+            width: 100%; min-height: 100vh; background-color: var(--c-bg); color: #fff;
+            font-family: var(--font-sans); 
+            overflow-x: clip; 
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* SPA Pages Control */
+        .page { display: none; width: 100%; position: relative; z-index: 10; }
+        .page.active { display: block; }
+
+        /* Global Backgrounds */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+        .grid-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 1;
+            background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 10vw 10vh; mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        /* Shared Components */
+        .nav-link { position: relative; text-decoration: none; cursor: pointer; }
+        .nav-link::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0%; height: 1px; background: #fff; transition: width 0.3s ease; }
+        .nav-link:hover::after { width: 100%; }
+        .font-serif-custom { font-family: 'Cormorant Garamond', serif; font-weight: 300; }
+        .font-mono-custom { font-family: 'JetBrains Mono', monospace; }
+        .cjk-text { font-family: "PingFang SC", sans-serif; letter-spacing: 0.1em; opacity: 0.8; font-weight: 300; }
+        
+        .reveal { opacity: 0; transform: translateY(40px); transition: all 1.2s cubic-bezier(0.215, 0.61, 0.355, 1); will-change: opacity, transform; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .delay-1 { transition-delay: 0.15s; } .delay-2 { transition-delay: 0.3s; } .delay-3 { transition-delay: 0.45s; } .delay-4 { transition-delay: 0.6s; }
+
+        /* ======== 统一光效与字体 (01 & 02) ======== */
+        .glowing-serif-title {
+            font-family: var(--font-serif) !important;
+            font-weight: 400 !important;
+            letter-spacing: 0.05em;
+            color: #fff;
+            text-shadow: 
+                0 0 10px rgba(255,255,255,0.6), 
+                0 0 20px rgba(255,255,255,0.4),
+                0 0 40px rgba(255,255,255,0.2),
+                -30px 0 20px rgba(255,255,255,0.2),
+                30px 0 20px rgba(255,255,255,0.2);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ======== 统一导航栏样式 (Progress Nav) ======== */
+        .progress-nav { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 30px; z-index: 101; pointer-events: auto; }
+        .progress-nav.fixed-nav { position: fixed; } /* 01 页面专用 */
+        .nav-item { width: 2px; height: 24px; background: rgba(255,255,255,0.2); transition: var(--transition); cursor: pointer; position: relative; border-radius: 2px; }
+        .nav-item:hover { background: rgba(255, 255, 255, 0.6); }
+        .nav-item.active { background: #ffffff; height: 48px; box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+        .nav-item::before { content: attr(data-label); position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 9px; font-weight: 400; letter-spacing: 0.2em; opacity: 0; transition: var(--transition); white-space: nowrap; color: rgba(255,255,255,0.5); }
+        .nav-item:hover::before, .nav-item.active::before { opacity: 1; right: 30px; }
+        .nav-item.active::before { color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.4); }
+
+        /* ======== 滚动指示器 ======== */
+        .scroll-indicator { 
+            position: absolute; 
+            bottom: 40px; 
+            left: 0; 
+            width: 100%;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            gap: 12px; 
+        }
+        .scroll-line { 
+            width: 1px; 
+            height: 40px; 
+            background: linear-gradient(to bottom, rgba(255,255,255,0.6), transparent); 
+        }
+        .scroll-text {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.2em;
+            font-family: var(--font-sans);
+            text-transform: uppercase;
+            text-align: center;
+            padding-left: 0.2em; 
+            margin: 0;
+        }
+
+        /* ======== Page Home & Experience ======== */
+        #page-home .sys-label, #page-experience .sys-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: rgba(255,255,255,0.3); letter-spacing: 0.2em; display: block; text-transform: uppercase; }
+        #page-home .sys-label::before, #page-experience .sys-label::before { content: 'sys.'; color: #45b4c4; margin-right: 0.5em; }
+        .glowing-text { text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.2); position: relative; }
+        .glass-panel { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; position: relative; overflow: hidden; transition: all 0.5s ease; padding: 3.5rem; }
+        .glass-panel:hover { border-color: rgba(69, 180, 196, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(69, 180, 196, 0.05); transform: translateY(-5px); }
+        .image-wrapper { position: relative; border-radius: 32px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .image-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 2s ease; }
+        .image-wrapper:hover img { transform: scale(1.03); }
+        .glow-cyan { box-shadow: 0 0 80px rgba(69, 180, 196, 0.15), inset 0 0 30px rgba(255,255,255,0.05); }
+        .glow-warm { box-shadow: 0 0 80px rgba(255, 243, 199, 0.1), inset 0 0 30px rgba(255,255,255,0.05); }
+
+        /* ======== Page Vision (01) ======== */
+        #page-vision section { min-height: 100vh; width: 100%; max-width: 1400px; padding: 120px 5vw; margin: 0 auto; position: relative; display: flex; flex-direction: column; justify-content: center; }
+        #page-vision .sys-label { font-family: var(--font-sans); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        #page-vision p { font-size: 0.95rem; line-height: 1.8; color: rgba(255, 255, 255, 0.7); font-weight: 300; }
+        #page-vision .hero-title { font-size: clamp(3.5rem, 8vw, 8rem); line-height: 1; margin-bottom: 24px; text-transform: uppercase; display: inline-block; }
+        .hero-subtitle { font-size: 0.85rem; font-weight: 300; letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.8); margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+        .manifesto-text { font-size: 1.6rem; line-height: 1.6; font-family: var(--font-serif); margin-bottom: 32px; color: #ffffff; font-weight: 300; }
+        .hardware-card { display: flex; flex-direction: column; gap: 24px; height: 100%; cursor: pointer; }
+        .hardware-icon { width: 60px; height: 60px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.05); }
+        .hardware-icon svg { width: 24px; height: 24px; stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.5; fill: none; }
+        .spec-list { list-style: none; margin-top: auto; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .spec-list li { font-size: 0.75rem; display: flex; justify-content: space-between; margin-bottom: 8px; color: rgba(255, 255, 255, 0.6); font-family: var(--font-sans); letter-spacing: 0.1em; }
+        
+        .signal-viz { height: 300px; width: 100%; position: relative; overflow: hidden; border-radius: 12px; background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 40px; display: flex; align-items: center; }
+        .wave-svg { position: absolute; top: 0; left: 0; width: 200%; height: 100%; animation: moveWave 10s linear infinite; }
+        .wave-path { fill: none; stroke: rgba(255,255,255,0.8); stroke-width: 2; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(255,255,255,0.5)); }
+        @keyframes moveWave { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        
+        .loop-container { position: relative; padding-left: 60px; }
+        .loop-line { position: absolute; left: 20px; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.15); }
+        .loop-step { position: relative; margin-bottom: 60px; }
+        .loop-step::before { content: ''; position: absolute; left: -44px; top: 8px; width: 9px; height: 9px; border-radius: 50%; background: #ffffff; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05), 0 0 12px rgba(255, 255, 255, 0.5); }
+        .math-formula { display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 24px; margin: 24px 0; }
+        .fraction { display: inline-flex; flex-direction: column; align-items: center; margin-left: 12px; vertical-align: middle; }
+        .fraction > span:first-child { border-bottom: 1px solid rgba(255, 255, 255, 0.6); padding: 0 8px 4px 8px; }
+        .fraction > span:last-child { padding: 4px 8px 0 8px; }
+        
+        @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 40px; } }
+
+        /* ======== Page Hardware (02) ======== */
+        #page-hardware .scroll-section { position: relative; z-index: 10; }
+        #page-hardware .sticky-container { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
+        #page-hardware .ui-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 100; padding: 100px 40px 40px 40px; display: flex; flex-direction: column; justify-content: space-between; }
+        #page-hardware .header { display: flex; justify-content: space-between; align-items: flex-start; }
+        #page-hardware .logo-group h1 { font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255, 255, 255, 0.8); }
+        #page-hardware .logo-group p { font-size: 9px; font-weight: 300; letter-spacing: 0.2em; color: rgba(255,255,255,0.5); margin-top: 6px; opacity: 0.6; }
+        #page-hardware .footer { display: flex; justify-content: space-between; align-items: flex-end; }
+        #page-hardware .metadata { font-size: 9px; font-weight: 300; letter-spacing: 0.2em; color: rgba(255,255,255,0.5); text-transform: uppercase; opacity: 0.5; }
+        #page-hardware .scene-container { position: absolute; inset: 0; display: grid; align-items: center; }
+        .scene-lingxi, .scene-lumina { grid-template-columns: 1fr 1fr; padding: 0 10%; }
+        .scene-tingfeng { grid-template-columns: 1.2fr 0.8fr; padding: 0 8%; }
+        .visual-stage { perspective: 2000px; height: 600px; display: flex; align-items: center; justify-content: center; }
+        .content-stage { padding-left: 60px; position: relative; height: 400px; }
+        .data-block { position: absolute; top: 0; left: 0; width: 100%; opacity: 0; transform: translateY(30px); transition: var(--transition); pointer-events: none; }
+        .data-block.active { opacity: 1; transform: translateY(0); pointer-events: all; }
+        #page-hardware .index { font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 0.25em; font-weight: 400; margin-bottom: 20px; display: block; text-transform: uppercase; }
+        #page-hardware .index::before { content: "[ "; opacity: 0.5; } #page-hardware .index::after { content: " ]"; opacity: 0.5; }
+        #page-hardware .title { font-size: 42px; line-height: 1.2; margin-bottom: 24px; }
+        #page-hardware .description { font-size: 13px; line-height: 1.8; font-weight: 300; color: rgba(255,255,255,0.5); max-width: 400px; margin-bottom: 40px; letter-spacing: 0.04em; }
+        #page-hardware .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 30px; }
+        #page-hardware .spec-item label { display: block; font-size: 9px; font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); margin-bottom: 8px; }
+        #page-hardware .spec-item span { font-size: 13px; font-weight: 300; color: #fff; letter-spacing: 0.05em; }
+
+        /* Hardware Models - 灵犀 */
+        #model-lingxi { position: relative; width: 400px; height: 120px; transform-style: preserve-3d; transform: rotateX(55deg) rotateZ(-25deg); transition: transform 0.1s ease-out; }
+        .layer-plane { position: absolute; inset: 0; border-radius: 60px; transition: var(--transition); display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .layer-plane.l1 { background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: inset 0 0 20px rgba(255,255,255,0.1), 0 15px 35px rgba(0,0,0,0.2) !important; }
+        .layer-plane.l2 { background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 0 15px rgba(255,255,255,0.1), inset 0 0 15px rgba(255,255,255,0.1) !important; }
+        .layer-plane.l3 { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .layer-plane.l3 > div { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.2) !important; box-shadow: 0 0 15px rgba(255,255,255,0.1); backdrop-filter: blur(4px); }
+        .layer-plane.l4 { background: rgba(255, 255, 255, 0.03); display: flex; gap: 8px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.15); }
+        .layer-plane.l5 { background: transparent; background-image: radial-gradient(rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 15px 15px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .battery-cell { flex: 1; height: 100%; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; }
+        
+        /* Hardware Models - 听风 */
+        #model-tingfeng { position: relative; width: 300px; height: 300px; transform-style: preserve-3d; transform: rotateY(-20deg) rotateX(10deg); transition: transform 0.1s ease-out; }
+        .part-node { position: absolute; top: 50%; left: 50%; transform-style: preserve-3d; transition: var(--transition); }
+        .touch-cover { width: 120px; height: 160px; background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.9) 45%, rgba(200,220,220,0.4) 50%, rgba(255,255,255,0.8) 55%, rgba(220,230,220,0.5) 100%); border-radius: 60% 40% 50% 50% / 70% 30% 70% 30%; box-shadow: inset -2px -2px 20px rgba(255,255,255,0.3), 0 10px 40px rgba(0,0,0,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.4); position: relative; overflow: hidden; }
+        .touch-cover::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6) 0%, transparent 60%); }
+        .sensor-ring { width: 100px; height: 140px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50px; background: rgba(20, 40, 50, 0.4); backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding: 20px 0; }
+        .sensor-node { width: 12px; height: 12px; background: #dcd6a8; border-radius: 50%; box-shadow: 0 0 15px #dcd6a8; opacity: 0.8; animation: pulse 2s infinite; }
+        .sensor-node.ecg { background: #ffffff; box-shadow: 0 0 15px #ffffff; }
+        .actuator-box { width: 80px; height: 80px; background: rgba(40, 70, 80, 0.3); border: 2px solid rgba(255,255,255,0.25); backdrop-filter: blur(6px); border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .actuator-box > div:last-child { background: rgba(255,255,255,0.4) !important; }
+        .wave-line { position: absolute; width: 100%; height: 100%; border: 1px solid rgba(255,255,255,0.4); border-radius: 50%; opacity: 0; transform: scale(0.5); }
+        @keyframes ripple { 0% { transform: scale(0.8); opacity: 0; } 50% { opacity: 0.3; } 100% { transform: scale(2.5); opacity: 0; } }
+        .alloy-clip { width: 140px; height: 180px; border: 12px solid rgba(255,255,255,0.15); border-left: none; border-radius: 0 90px 90px 0; position: relative; }
+        .nitinol-skeleton { position: absolute; inset: -4px; border: 1px solid rgba(255,255,255,0.5); border-left: none; border-radius: 0 92px 92px 0; opacity: 0.6; }
+
+        /* Hardware Models - 流光 (Lumina) */
+        #model-lumina { position: relative; width: 440px; height: 260px; transform-style: preserve-3d; transform: rotateX(50deg) rotateZ(-30deg); transition: transform 0.1s ease-out; }
+        .layer-lumina { position: absolute; inset: 0; border-radius: 60px; transition: var(--transition); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.05); }
+        .layer-lumina.l1 { 
+            background: linear-gradient(115deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.02) 60%, rgba(255,255,255,0.08) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.05), 0 20px 50px rgba(0,0,0,0.3);
+            background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 40%), radial-gradient(circle at 80% 20%, rgba(207, 168, 122, 0.05) 0%, transparent 40%);
+        }
+        .layer-lumina.l2 {
+            background-color: rgba(15, 15, 20, 0.4);
+            background-image: radial-gradient(ellipse at 70% 40%, rgba(230, 110, 50, 0.25) 0%, transparent 50%), url("data:image/svg+xml,%3Csvg width='24' height='41.569' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 0L24 6.928v13.856L12 27.713 0 20.784V6.928z' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='1'/%3E%3Cpath d='M12 41.569l12-6.928V20.784l-12-6.928-12 6.928v13.857z' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='1'/%3E%3C/svg%3E");
+            border: 1px solid rgba(255, 150, 50, 0.1);
+        }
+        .layer-lumina.l3 { 
+            background: rgba(10, 12, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background-image: radial-gradient(circle at 40% 60%, rgba(232, 165, 152, 0.25) 0%, transparent 60%), radial-gradient(circle at 80% 30%, rgba(100, 200, 255, 0.1) 0%, transparent 50%), radial-gradient(rgba(255,255,255,0.6) 0.5px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 12px 12px;
+        }
+        .layer-lumina.l4 { 
+            background-color: rgba(5, 5, 8, 0.5);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 9px), repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.08) 8px, rgba(255,255,255,0.08) 9px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .layer-lumina.l5 { 
+            background: #0a0b10; 
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h2v2H0zM2 2h2v2H2z' fill='rgba(255,255,255,0.02)'/%3E%3C/svg%3E");
+        }
+        .hidden-hub {
+            position: absolute; bottom: 25px; right: 40px; width: 45px; height: 20px;
+            background: #111; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .hidden-hub::before, .hidden-hub::after {
+            content: ''; width: 4px; height: 4px; border-radius: 50%; background: #cfa87a; opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="webgl-container"></div>
+    <div class="grid-overlay"></div>
+
+    <header class="fixed top-0 left-0 w-full p-8 md:px-16 flex justify-between items-center z-[9999]" style="mix-blend-mode: difference;">
+        <span onclick="switchPage('page-home')" class="cursor-pointer font-serif-custom text-xl tracking-[0.15em] uppercase text-white hover:opacity-80 transition-opacity">AetherLeaf</span>
+        <div class="hidden md:flex gap-12 font-mono-custom text-[0.65rem] uppercase tracking-[0.2em] text-white/50">
+            <span onclick="switchPage('page-vision')" class="nav-link cursor-pointer hover:text-white transition-colors duration-300">01. Introduction</span>
+            <span onclick="switchPage('page-hardware')" class="nav-link cursor-pointer hover:text-white transition-colors duration-300">02. Views</span>
+            <span onclick="switchPage('page-experience')" class="nav-link cursor-pointer hover:text-white transition-colors duration-300">03. Scenarios</span>
+        </div>
+    </header>
+
+
+    <main id="page-home" class="page active">
+        <section class="min-h-screen w-full flex items-center pt-24 pb-12 px-8 md:px-16 relative">
+            <div class="max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                <div class="col-span-1 lg:col-span-5 flex flex-col justify-center z-10 order-2 lg:order-1">
+                    <h1 class="font-serif-custom text-6xl md:text-8xl lg:text-[7rem] leading-[0.9] tracking-tight mb-6 reveal delay-1">
+                        <span class="glowing-text block">Aether</span>
+                        <span class="glowing-text block mt-2 text-white/90">Leaf <span class="text-3xl md:text-5xl text-white/40 ml-2 tracking-widest cjk-text" style="text-shadow: none;">幻叶</span></span>
+                    </h1>
+                    <div class="h-[1px] w-1/3 bg-gradient-to-r from-white/20 to-transparent my-8 reveal delay-2"></div>
+                    <p class="text-lg md:text-xl text-white/60 font-light leading-relaxed max-w-md reveal delay-2 cjk-text">
+                        基于柔性传感与骨传导共振技术的数字仿生系统。无感捕获脑电节律，实时干预情绪拓扑，在梦境边缘重构您的专属疗愈之境。
+                    </p>
+                </div>
+
+                <div class="col-span-1 lg:col-span-7 relative order-1 lg:order-2 reveal delay-1">
+                    <div class="aspect-[4/3] lg:aspect-[16/11] image-wrapper glow-cyan w-full relative">
+                        <img src="edf7b9be84b808be8d20855b6d87e6cb.png" alt="AetherLeaf Translucent Band">
+                        <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#45b4c4]/50 to-transparent opacity-50 animate-[scan_6s_ease-in-out_infinite]"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <main id="page-vision" class="page">
+        
+        <nav class="progress-nav fixed-nav nav-vision">
+            <div class="nav-item active" data-label="01. IDENTITY" onclick="scrollToElement('mod-01')"></div>
+            <div class="nav-item" data-label="02. CONCEPT" onclick="scrollToElement('mod-02')"></div>
+            <div class="nav-item" data-label="03. HARDWARE" onclick="scrollToElement('mod-03')"></div>
+            <div class="nav-item" data-label="04. MAPPING" onclick="scrollToElement('mod-04')"></div>
+            <div class="nav-item" data-label="05. LOOP" onclick="scrollToElement('mod-05')"></div>
+            <div class="nav-item" data-label="06. SCENARIO" onclick="scrollToElement('mod-06')"></div>
+        </nav>
+
+        <section class="text-center" id="mod-01">
+            <div class="sys-label reveal justify-center">[ 模块 01 : 身份定义 ]</div>
+            <h1 class="hero-title glowing-serif-title reveal delay-1" style="font-family: 'Cormorant Garamond', serif !important;">AetherLeaf</h1>
+            <div class="cjk-text reveal delay-2 text-xl tracking-[0.5em] mt-6 opacity-70">幻 叶 系 统</div>
+            <p class="hero-subtitle reveal delay-3 mt-6">可穿戴睡眠与梦境管理产品设计</p>
+            
+            <div class="scroll-indicator reveal delay-4">
+                <div class="scroll-line"></div>
+                <p class="scroll-text">SCROLL TO EXPLORE</p>
+            </div>
+        </section>
+
+        <section id="mod-02">
+            <div class="grid-2">
+                <div class="reveal">
+                    <div class="sys-label">[ 模块 02 : 设计核心理念 ]</div>
+                    <h2 class="glowing-serif-title text-5xl mb-6">隐喻的进化</h2>
+                    <p class="manifesto-text">彻底打破传统医疗设备的临床束缚。<br>我们设计的是一件“情绪假体”。</p>
+                    <p class="cjk-text">从“医疗监控”向“仿生隐喻”的进化。AetherLeaf 不去对抗失眠，而是构建一座私人精神花园。以自然界叶片呼吸的节律为原型，将焦虑转化为美学体验。</p>
+                </div>
+                <div class="glass-panel reveal delay-2" style="padding: 4rem;">
+                    <div class="sys-label">以用户为中心 (UCD) 演进阶段</div>
+                    <div class="flex flex-col gap-5 mt-6 max-h-[400px] overflow-y-auto pr-4">
+                        <div>
+                            <h4 class="text-xs tracking-widest mb-1.5 uppercase text-white">阶段一：去医疗化解构</h4>
+                            <p class="cjk-text text-sm text-white/60">剥离传统“电极帽”的器械感与被凝视感，让脑机接口 (BCI) 技术以首饰化形态自然融入居家场景。</p>
+                        </div>
+                        <div class="h-px bg-white/10 w-full"></div>
+                        <div>
+                            <h4 class="text-xs tracking-widest mb-1.5 uppercase text-white">阶段二：仿生学赋能</h4>
+                            <p class="cjk-text text-sm text-white/60">叶片代表轻盈与呼吸。柔性传感器如叶脉般贴合肌肤；通过“光合作用”隐喻，将焦虑脑电波转化为治愈的感官养分。</p>
+                        </div>
+                        <div class="h-px bg-white/10 w-full"></div>
+                        <div>
+                            <h4 class="text-xs tracking-widest mb-1.5 uppercase text-white">阶段三：触觉至上与色彩学</h4>
+                            <p class="cjk-text text-sm text-white/60">摒弃硬质塑料，采用“晨雾灰”与“低频蓝”仿生硅胶弹性体，内置微光呼吸灯给予心理安抚，确保8小时无感穿戴。</p>
+                        </div>
+                        <div class="h-px bg-white/10 w-full"></div>
+                        <div>
+                            <h4 class="text-xs tracking-widest mb-1.5 uppercase text-white">阶段四：边界与设计伦理</h4>
+                            <p class="cjk-text text-sm text-white/60">底层逻辑是“引导而非控制”。系统不强行唤醒，而是像潜意识边缘的提灯向导，帮助大脑依靠自身弹性恢复平静。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="mod-03">
+            <div class="sys-label reveal justify-center">[ 模块 03 : 硬件架构 ]</div>
+            <h2 class="glowing-serif-title reveal delay-1 text-5xl mb-4 text-center">分布式感知节点</h2>
+            <p class="cjk-text reveal delay-1 text-center mb-16">三大核心硬件模块，通过 BLE 5.3 无缝协同构建神经局域网</p>
+
+            <div class="grid-3">
+                <div class="glass-panel hardware-card reveal delay-1" onclick="switchPage('page-hardware')" style="padding: 4rem 2.5rem;">
+                    <div class="hardware-icon"><svg viewBox="0 0 24 24"><path d="M4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12" stroke-linecap="round"></path></svg></div>
+                    <h3 class="cjk-text text-xl">“灵犀”柔性发带<br><span class="text-xs font-normal text-white/60 font-sans">感知之叶</span></h3>
+                    <p class="cjk-text text-sm">极薄非侵入式干电极，厚度小于 1mm，弹性自适应不同头围，无感采集脑波信号。</p>
+                    <ul class="spec-list">
+                        <li><span>穿戴位置</span><span class="text-white">额前及颞叶</span></li>
+                        <li><span>核心功能</span><span class="text-white">EEG 脑电采集</span></li>
+                        <li><span>组件厚度</span><span class="text-white">&lt; 1.0 毫米</span></li>
+                    </ul>
+                </div>
+                <div class="glass-panel hardware-card reveal delay-2" onclick="switchPage('page-hardware')" style="padding: 4rem 2.5rem;">
+                    <div class="hardware-icon"><svg viewBox="0 0 24 24"><path d="M12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12" stroke-dasharray="4 4"></path></svg></div>
+                    <h3 class="cjk-text text-xl">“听风”骨传导耳夹<br><span class="text-xs font-normal text-white/60 font-sans">共振交互</span></h3>
+                    <p class="cjk-text text-sm">夹扣式无感设计，绕开耳道，集成微型六轴传感器精准感知翻身动作与生理节律。</p>
+                    <ul class="spec-list">
+                        <li><span>穿戴位置</span><span class="text-white">耳垂或耳轮</span></li>
+                        <li><span>核心功能</span><span class="text-white">EOG/ECG + 声疗反馈</span></li>
+                        <li><span>内置传感</span><span class="text-white">六轴陀螺仪</span></li>
+                    </ul>
+                </div>
+                <div class="glass-panel hardware-card reveal delay-3" onclick="switchPage('page-hardware')" style="padding: 4rem 2.5rem;">
+                    <div class="hardware-icon"><svg viewBox="0 0 24 24"><path d="M3 3H21V21H3V3Z" stroke-width="1"></path><path d="M3 10H21M3 14H21M10 3V21M14 3V21" stroke-width="0.5"></path></svg></div>
+                    <h3 class="cjk-text text-xl">“流光”智能织物<br><span class="text-xs font-normal text-white/60 font-sans">微气候场</span></h3>
+                    <p class="cjk-text text-sm">嵌入微型柔性 LED 阵列与形状记忆合金，实现精准的局部控温与如呼吸般的光影起伏。</p>
+                    <ul class="spec-list">
+                        <li><span>使用方式</span><span class="text-white">眼罩 / 轻薄盖毯</span></li>
+                        <li><span>核心功能</span><span class="text-white">光影与温度引导</span></li>
+                        <li><span>核心技术</span><span class="text-white">柔性发光与记忆合金</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="mod-04">
+            <div class="grid-2 !gap-[120px]">
+                <div class="reveal">
+                    <div class="signal-viz">
+                        <svg class="wave-svg" viewBox="0 0 1600 300" preserveAspectRatio="none">
+                            <path class="wave-path opacity-30" d="M0,150 Q100,50 200,150 T400,150 T600,150 T800,150 T1000,150 T1200,150 T1400,150 T1600,150"></path>
+                            <path class="wave-path opacity-60 stroke-[1.5px]" d="M0,150 Q100,90 200,150 T400,150 T600,150 T800,150 T1000,150 T1200,150 T1400,150 T1600,150"></path>
+                            <path class="wave-path opacity-100" d="M0,150 Q100,120 200,150 T400,150 T600,150 T800,150 T1000,150 T1200,150 T1400,150 T1600,150"></path>
+                        </svg>
+                        <div class="absolute top-5 left-5 sys-label" style="z-index: 10;">信号拓扑 // THETA波段</div>
+                    </div>
+                    <div class="math-formula">
+                        <span class="cjk-text font-normal mr-2">压力指数</span> = 
+                        <div class="fraction">
+                            <span>&beta;<sub>(高频波)</sub></span>
+                            <span>&alpha;<sub>(放松波)</sub> + &theta;<sub>(深度波)</sub></span>
+                        </div>
+                    </div>
+                    <p class="sys-label justify-center opacity-50">核心算法：功率谱密度 (PSD) 监测</p>
+                </div>
+                <div class="reveal delay-1">
+                    <div class="sys-label">[ 模块 04 : 神经映射 ]</div>
+                    <h2 class="glowing-serif-title text-5xl mb-6">技术路径与信号解码</h2>
+                    <p class="cjk-text">AI 介入的本质不是控制，而是引导。系统内置专属的情绪拓扑算法，实时获取脑电功率谱密度 (PSD)，重点监测 α 波 (放松) 与 θ 波 (深度创意/REM阶段) 的比例。</p>
+                    <br>
+                    <p class="cjk-text">潜意识语义化：当压力指数超过阈值，生成式 AI 会精准提取情绪张力，将恐惧重构为极具“包裹感”的暖光与粉红噪音；将焦虑等紊乱频率，转化为有序的“森林呼吸律动”。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="mod-05">
+            <div class="sys-label reveal">[ 模块 05 : 实时干预 ]</div>
+            <h2 class="glowing-serif-title reveal delay-1 text-5xl mb-16">闭环疗愈机制</h2>
+            <div class="loop-container reveal delay-2">
+                <div class="loop-line"></div>
+                <div class="loop-step">
+                    <h3 class="glowing-serif-title text-2xl mb-2">01. 潜意识感知 (Sensing)</h3>
+                    <p class="cjk-text text-[0.95rem] max-w-[600px] text-white/60">系统持续追踪生物电信号。当识别到用户在 REM 期出现剧烈眼动（EOG）和心率飙升（ECG），即刻判定为噩梦发作或高压状态。</p>
+                </div>
+                <div class="loop-step">
+                    <h3 class="glowing-serif-title text-2xl mb-2">02. 疗愈声效介入 (Acoustic Injection)</h3>
+                    <p class="cjk-text text-[0.95rem] max-w-[600px] text-white/60">骨传导耳夹精准注入 432Hz 的疗愈频率与自然白噪音，诱导大脑进入稳定的 δ (Delta) 波段，抚平潜意识的剧烈波动。</p>
+                </div>
+                <div class="loop-step">
+                    <h3 class="glowing-serif-title text-2xl mb-2">03. 温感与光影同步 (Tactile & Visual)</h3>
+                    <p class="cjk-text text-[0.95rem] max-w-[600px] text-white/60">智能织物微幅升温模拟人体体温，提供安全包裹感。同时，柔性光纤模拟黎明光线散射（Dawn Simulation），柔和淡化梦境阴影。</p>
+                </div>
+                <div class="loop-step">
+                    <h3 class="glowing-serif-title text-2xl mb-2">04. 梦境美学重构 (Reconstruction)</h3>
+                    <p class="cjk-text text-[0.95rem] max-w-[600px] text-white/60">晨间醒来后，APP 基于当晚的梦境数据波动，自动生成一张独一无二的“潜意识艺术画作”，将不可见的压力转化为可见的美学释放。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="mod-06" style="min-height: 80vh;">
+            <div class="grid-2">
+                <div class="reveal">
+                    <div class="sys-label">[ 模块 06 : 核心场景应用 ]</div>
+                    <h2 class="glowing-serif-title text-5xl mb-6">都市深层睡眠修复</h2>
+                    <h4 class="cjk-text text-xl mb-4 text-white">写字楼里的 20 分钟精神绿洲</h4>
+                    <p class="cjk-text mb-4">长期焦虑导致午睡多处于浅层，醒来后不仅没有恢复，往往更加疲惫。AetherLeaf 为高频快节奏的职场人定制了“极速断联”模式。</p>
+                </div>
+                <div class="glass-panel reveal delay-2" style="padding: 4rem;">
+                    <ul class="spec-list !pt-0 !border-none !m-0">
+                        <li class="!block mb-6">
+                            <span class="block text-white mb-2 text-sm">1. 敏捷启动 (Initiation)</span>
+                            <span class="cjk-text text-white/60 normal-case text-sm leading-relaxed">用户戴上发带，系统即刻开启“快速入眠”模式。监测到进入浅睡状态后，骨传导自动播放极简的自然声场。</span>
+                        </li>
+                        <li class="!block mb-6">
+                            <span class="block text-white mb-2 text-sm">2. 动态护盾 (Dynamic Shield)</span>
+                            <span class="cjk-text text-white/60 normal-case text-sm leading-relaxed">若中途监测到心率或脑电波动异常，系统自动调节环境光影为深蓝色调，强制切断负面潜意识的连锁反应。</span>
+                        </li>
+                        <li class="!block">
+                            <span class="block text-white mb-2 text-sm">3. 深度重构 (Resolution)</span>
+                            <span class="cjk-text text-white/60 normal-case text-sm leading-relaxed">将短暂、碎片化的休息，升华为一次深度的心理洗涤，满电醒来。</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+
+    <main id="page-hardware" class="page">
+        <div id="section-lingxi" class="scroll-section" style="height: 600vh;">
+            <div class="sticky-container">
+                <div class="ui-overlay">
+                    <header class="header">
+                        <div class="logo-group"><h1>灵犀 · SENSOR LEAF</h1></div>
+                    </header>
+                    <div class="scroll-indicator"><div class="scroll-line"></div><p class="scroll-text">SCROLL TO EXPLORE</p></div>
+                    <footer class="footer"><div class="metadata">DESIGNED BY FZU</div></footer>
+                </div>
+
+                <nav class="progress-nav nav-lingxi">
+                    <div class="nav-item active" data-label="OVERVIEW" onclick="scrollToHardwareProgress('section-lingxi', 0)"></div>
+                    <div class="nav-item" data-label="L1: EXTERNAL" onclick="scrollToHardwareProgress('section-lingxi', 0.2)"></div>
+                    <div class="nav-item" data-label="L2: OPTICAL" onclick="scrollToHardwareProgress('section-lingxi', 0.4)"></div>
+                    <div class="nav-item" data-label="L3: CIRCUIT" onclick="scrollToHardwareProgress('section-lingxi', 0.6)"></div>
+                    <div class="nav-item" data-label="L4: POWER" onclick="scrollToHardwareProgress('section-lingxi', 0.8)"></div>
+                    <div class="nav-item" data-label="L5: SENSOR" onclick="scrollToHardwareProgress('section-lingxi', 1.0)"></div>
+                </nav>
+
+                <div class="scene-container scene-lingxi">
+                    <div class="visual-stage">
+                        <div id="model-lingxi">
+                            <div class="layer-plane l5" id="plane-5"></div>
+                            <div class="layer-plane l4" id="plane-4"><div class="battery-cell"></div><div class="battery-cell"></div><div class="battery-cell"></div></div>
+                            <div class="layer-plane l3" id="plane-3"><div style="width: 40px; height: 40px; background: #333; border: 1px solid #444;"></div></div>
+                            <div class="layer-plane l2" id="plane-2"></div>
+                            <div class="layer-plane l1" id="plane-1"></div>
+                        </div>
+                    </div>
+                    <div class="content-stage">
+                        <div class="data-block data-block-lingxi active">
+                            <span class="index">00 / SYSTEM</span><h2 class="title glowing-serif-title">灵犀 (Sensor Leaf)<br>柔性发带</h2>
+                            <p class="description">"灵犀"核心模块是一个高度集成的五层物理架构，模拟生物神经元的传导路径，实现厘米级精度的非侵入式信号采集。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>THICKNESS</label><span>2.44 mm</span></div><div class="spec-item"><label>WEIGHT</label><span>12.8 g</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lingxi">
+                            <span class="index">01 / EXTERNAL</span><h2 class="title glowing-serif-title">仿生外壳层</h2>
+                            <p class="description">半透明冰雾硅胶，具备SSS（次表面散射）特性。不仅提供温润的亲肤触感，其叶脉纹路能有效分散物理应力。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>MATERIAL</label><span>Medical Silicone</span></div><div class="spec-item"><label>FINISH</label><span>Frosted / Veined</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lingxi">
+                            <span class="index">02 / INTERACTION</span><h2 class="title glowing-serif-title">光影交互层</h2>
+                            <p class="description">Theta Blue 柔性光纤阵列。通过波长为470nm的相干光模拟大脑波段律动，将不可见的神经活动转化为可见的光影反馈。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>COLOR</label><span>Theta Blue</span></div><div class="spec-item"><label>INTERFACE</label><span>Optical Fiber</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lingxi">
+                            <span class="index">03 / LOGIC</span><h2 class="title glowing-serif-title">柔性核心电路</h2>
+                            <p class="description">FPC柔性电路基板。集成AI边缘计算单元与BLE 5.3通讯模块，在保持极薄形态的同时提供强大的算力支撑。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>PROCESSOR</label><span>Edge AI Tensor</span></div><div class="spec-item"><label>PROTOCOL</label><span>Ultra-Low BLE</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lingxi">
+                            <span class="index">04 / ENERGY</span><h2 class="title glowing-serif-title">柔性电源层</h2>
+                            <p class="description">分段式薄膜固态电池。采用矩阵排布以适应复杂的弯折形变，支持长达72小时的连续高强度监测。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>CELL TYPE</label><span>Solid State</span></div><div class="spec-item"><label>CAPACITY</label><span>480 mAh</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lingxi">
+                            <span class="index">05 / INTERFACE</span><h2 class="title glowing-serif-title">无感采集底面</h2>
+                            <p class="description">由导电聚合物构成的气孔状电极阵列。非侵入式接触设计，能够穿透角质层电阻捕获微弱的皮层电信号。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>ELECTRODE</label><span>Dry Polymer</span></div><div class="spec-item"><label>SENSITIVITY</label><span>&lt; 5µV</span></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-tingfeng" class="scroll-section" style="height: 500vh;">
+            <div class="sticky-container">
+                <div class="ui-overlay">
+                    <header class="header">
+                        <div class="logo-group"><h1>听风 · VIBE CLIP</h1></div>
+                    </header>
+                    <div class="scroll-indicator"><div class="scroll-line"></div><p class="scroll-text">SCROLL TO EXPLORE</p></div>
+                    <footer class="footer"><div class="metadata">DESIGNED BY FZU</div></footer>
+                </div>
+                <nav class="progress-nav nav-tingfeng">
+                    <div class="nav-item active" data-label="OVERVIEW" onclick="scrollToHardwareProgress('section-tingfeng', 0)"></div>
+                    <div class="nav-item" data-label="P1: TOUCH" onclick="scrollToHardwareProgress('section-tingfeng', 0.25)"></div>
+                    <div class="nav-item" data-label="P2: SENSORS" onclick="scrollToHardwareProgress('section-tingfeng', 0.5)"></div>
+                    <div class="nav-item" data-label="P3: AUDIO" onclick="scrollToHardwareProgress('section-tingfeng', 0.75)"></div>
+                    <div class="nav-item" data-label="P4: STRUCTURE" onclick="scrollToHardwareProgress('section-tingfeng', 1.0)"></div>
+                </nav>
+                <div class="scene-container scene-tingfeng">
+                    <div class="visual-stage">
+                        <div id="model-tingfeng">
+                            <div class="part-node" id="part-4" style="z-index: 1;"><div class="alloy-clip"><div class="nitinol-skeleton"></div></div></div>
+                            <div class="part-node" id="part-3" style="z-index: 2;"><div class="actuator-box"><div class="wave-line" style="animation: ripple 2s infinite 0s;"></div><div class="wave-line" style="animation: ripple 2s infinite 0.6s;"></div><div class="wave-line" style="animation: ripple 2s infinite 1.2s;"></div><div style="width: 20px; height: 2px; background: #555;"></div></div></div>
+                            <div class="part-node" id="part-2" style="z-index: 3;"><div class="sensor-ring"><div class="sensor-node"></div><div class="sensor-node ecg"></div></div></div>
+                            <div class="part-node" id="part-1" style="z-index: 4;"><div class="touch-cover"></div></div>
+                        </div>
+                    </div>
+                    <div class="content-stage">
+                        <div class="data-block data-block-tingfeng active">
+                            <span class="index">00 / OVERVIEW</span><h2 class="title glowing-serif-title">听风 (Vibe Clip)<br>骨传导音频耳饰</h2>
+                            <p class="description">重新定义佩戴式音频。通过骨传导技术与生物信号监测的融合，在梦境与现实的边缘提供精准的频率干预，实现深度放松。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>WEIGHT</label><span>5.4 g (Per Ear)</span></div><div class="spec-item"><label>FREQUENCY</label><span>432 Hz Tuned</span></div></div>
+                        </div>
+                        <div class="data-block data-block-tingfeng">
+                            <span class="index">01 / TOUCH COVER</span><h2 class="title glowing-serif-title">液态金属触控层</h2>
+                            <p class="description">采用流线型水滴造型，表面呈现动态液态金属光泽。集成高灵敏度电容式触控，支持轻叩唤醒、双击切换疗愈模式。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>FINISH</label><span>Liquid Chrome</span></div><div class="spec-item"><label>SENSOR</label><span>Hidden Capacitive</span></div></div>
+                        </div>
+                        <div class="data-block data-block-tingfeng">
+                            <span class="index">02 / BIOMETRICS</span><h2 class="title glowing-serif-title">生理信号采集环</h2>
+                            <p class="description">紧贴耳垂内侧。集成微型红外血氧传感器（SpO2）与柔性ECG电极。实时捕获心率变异性（HRV），为睡眠算法提供基础。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>ACCURACY</label><span>Medical Grade</span></div><div class="spec-item"><label>BIOMARKERS</label><span>SpO2 / HRV / ECG</span></div></div>
+                        </div>
+                        <div class="data-block data-block-tingfeng">
+                            <span class="index">03 / AUDIO CORE</span><h2 class="title glowing-serif-title">骨传导震子模块</h2>
+                            <p class="description">核心声学单元，通过微型弹簧悬挂系统最大限度减少漏音。预设432Hz疗愈波段，诱导大脑进入Theta深层放松状态。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>DRIVE</label><span>Vibration Actuator</span></div><div class="spec-item"><label>SUSPENSION</label><span>Micro-Spring</span></div></div>
+                        </div>
+                        <div class="data-block data-block-tingfeng">
+                            <span class="index">04 / STRUCTURE</span><h2 class="title glowing-serif-title">记忆合金夹持结构</h2>
+                            <p class="description">包裹于医用级硅胶内的镍钛记忆合金（Nitinol）骨架。具备超强自适应性，确保佩戴稳固且无任何物理压迫感。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>SKELETON</label><span>Nitinol Alloy</span></div><div class="spec-item"><label>COATING</label><span>Soft Silicone</span></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-lumina" class="scroll-section" style="height: 600vh;">
+            <div class="sticky-container">
+                <div class="ui-overlay">
+                    <header class="header">
+                        <div class="logo-group"><h1>流光 · LUMINA FABRIC</h1></div>
+                    </header>
+                    <div class="scroll-indicator"><div class="scroll-line"></div><p class="scroll-text">SCROLL TO EXPLORE</p></div>
+                    <footer class="footer"><div class="metadata">DESIGNED BY FZU</div></footer>
+                </div>
+                <nav class="progress-nav nav-lumina">
+                    <div class="nav-item active" data-label="OVERVIEW" onclick="scrollToHardwareProgress('section-lumina', 0)"></div>
+                    <div class="nav-item" data-label="L1: TACTILE" onclick="scrollToHardwareProgress('section-lumina', 0.2)"></div>
+                    <div class="nav-item" data-label="L2: THERMAL" onclick="scrollToHardwareProgress('section-lumina', 0.4)"></div>
+                    <div class="nav-item" data-label="L3: BIONIC" onclick="scrollToHardwareProgress('section-lumina', 0.6)"></div>
+                    <div class="nav-item" data-label="L4: MEMORY" onclick="scrollToHardwareProgress('section-lumina', 0.8)"></div>
+                    <div class="nav-item" data-label="L5: BASE" onclick="scrollToHardwareProgress('section-lumina', 1.0)"></div>
+                </nav>
+                <div class="scene-container scene-lumina">
+                    <div class="visual-stage">
+                        <div id="model-lumina">
+                            <div class="layer-lumina l5" id="plane-lum-5">
+                                <div class="hidden-hub"></div>
+                            </div>
+                            <div class="layer-lumina l4" id="plane-lum-4"></div>
+                            <div class="layer-lumina l3" id="plane-lum-3"></div>
+                            <div class="layer-lumina l2" id="plane-lum-2"></div>
+                            <div class="layer-lumina l1" id="plane-lum-1"></div>
+                        </div>
+                    </div>
+                    <div class="content-stage">
+                        <div class="data-block data-block-lumina active">
+                            <span class="index">00 / SYSTEM</span><h2 class="title glowing-serif-title">智能助眠织物系统</h2>
+                            <p class="description">"流光" (Lumina Fabric) 核心结构是一个高度集成的五层柔性架构，将微观温控、仿生光影与生理监测完美融合于无感的织物之中，重塑睡眠体验。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>TOTAL THICKNESS</label><span>3.15 mm</span></div><div class="spec-item"><label>FLEXIBILITY</label><span>Ultra-Soft 360°</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lumina">
+                            <span class="index">01 / TACTILE</span><h2 class="title glowing-serif-title">亲肤交互层</h2>
+                            <p class="description">桑蚕丝与微米级液态金属纤维混纺面料。不仅呈现高级的哑光丝绸光泽与细腻触感，隐蔽的液态金属叶脉纹理更增强了结构强度并提供环境电磁屏蔽，极致透气。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>MATERIAL</label><span>Silk & Liquid Metal Blend</span></div><div class="spec-item"><label>FINISH</label><span>Matte / Veined Micro-texture</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lumina">
+                            <span class="index">02 / THERMAL</span><h2 class="title glowing-serif-title">动态温控层</h2>
+                            <p class="description">超薄柔性石墨烯发热膜。采用六边形蜂窝网格结构，能在特定区域（如颈肩）释放微弱的热辐射，模拟体温，提供具有包裹感的微幅升温反馈。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>CORE TECH</label><span>Flexible Graphene Film</span></div><div class="spec-item"><label>PATTERN</label><span>Honeycomb Mesh</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lumina">
+                            <span class="index">03 / ILLUMINATION</span><h2 class="title glowing-serif-title">仿生光影层</h2>
+                            <p class="description">微型柔性 LED 阵列与超细光纤网。作为织物的视觉输出核心，宛如繁星或涟漪散布。释放柔和的"晨曦色" (Dawn Simulation) 光晕，在黑暗中缓慢变幻，淡化梦境阴影。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>LIGHT SOURCE</label><span>Micro-LED & Optical Fiber</span></div><div class="spec-item"><label>COLOR PROFILE</label><span>Dawn Simulation (Warm)</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lumina">
+                            <span class="index">04 / MEMORY</span><h2 class="title glowing-serif-title">记忆塑形层</h2>
+                            <p class="description">隐匿式镍钛形状记忆合金微丝。极其纤细的交叉结构，受微弱电信号控制产生轻微收缩，在物理层面模拟出"缓慢呼吸"的起伏节奏，引导身体同频放松。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>STRUCTURE</label><span>Nitinol Micro-wires</span></div><div class="spec-item"><label>MOTION</label><span>Breathing Rhythm Simulation</span></div></div>
+                        </div>
+                        <div class="data-block data-block-lumina">
+                            <span class="index">05 / BASE</span><h2 class="title glowing-serif-title">控制与配重底布</h2>
+                            <p class="description">带有微弹性的深色高密度基布，完美承托内部精密层。边缘集成扁平的隐形微型控制枢纽，包含磁吸充电、NFC与传感模块，实现零压迫感的无感体验。</p>
+                            <div class="spec-grid"><div class="spec-item"><label>FABRIC</label><span>High-density Elastic Base</span></div><div class="spec-item"><label>HUB INTEGRATION</label><span>Flexible Silicone Pod / NFC</span></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+    <main id="page-experience" class="page">
+        <section class="min-h-screen w-full py-24 px-8 md:px-16 relative flex items-center">
+            <div class="max-w-[1600px] mx-auto w-full relative">
+                <div class="text-center mb-16 lg:hidden reveal">
+                    <h2 class="font-serif-custom text-3xl glowing-text">Sanctuary of the Mind</h2>
+                </div>
+                <div class="relative w-full h-[60vh] md:h-[80vh] image-wrapper glow-warm reveal">
+                    <img src="69b882faaae31ff3003be7956f9221fd.png" alt="Person sleeping wearing AetherLeaf" style="object-position: center 30%;">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#0a0d14] via-transparent to-transparent opacity-80"></div>
+                    <div class="absolute inset-0 bg-[#0a0d14]/20 mix-blend-multiply"></div>
+                </div>
+                
+                <div class="hidden lg:block absolute bottom-10 left-10 w-[280px] glass-panel glass-panel-warm p-6 reveal delay-2 z-10">
+                    <h2 class="font-serif-custom text-3xl text-white mb-4 leading-tight">Sanctuary<br>of the Mind.</h2>
+                    <p class="text-white/60 font-light leading-relaxed text-xs cjk-text">
+                        无形的睡眠建筑。当您入睡时，神经束带会实时映射您的认知状态，调节环境频率和微妙的温度变化，以呵护您的潜意识。它不是一个设备，而是一个环境。
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <script>
+        // --- 核心页面切换逻辑 ---
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            
+            setTimeout(() => window.dispatchEvent(new Event('scroll')), 50);
+        }
+
+        function scrollToElement(elId) {
+            const el = document.getElementById(elId);
+            if(el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToHardwareProgress(sectionId, ratio) {
+            const sec = document.getElementById(sectionId);
+            if(sec) {
+                const wh = window.innerHeight;
+                const targetScroll = sec.offsetTop + (sec.offsetHeight - wh) * ratio;
+                window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+            }
+        }
+
+        // --- 全局 WebGL 底座 ---
+        const initWebGL = () => {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            const fragmentShader = `
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                    vec2 aspectUV = uv; aspectUV.x *= u_resolution.x / u_resolution.y;
+                    vec3 baseColor = vec3(0.04, 0.05, 0.08);
+                    vec3 cyanBloom = vec3(0.27, 0.70, 0.77);
+                    vec3 warmBloom = vec3(1.0, 0.95, 0.78);
+                    
+                    vec2 pos1 = vec2(1.0 * (u_resolution.x/u_resolution.y), 0.8) + vec2(sin(u_time * 0.15)*0.15, cos(u_time*0.1)*0.1);
+                    float blob1 = smoothstep(1.8, 0.0, length(aspectUV - pos1));
+
+                    vec2 pos2 = vec2(0.2 * (u_resolution.x/u_resolution.y), 0.3) + vec2(cos(u_time * 0.1)*0.2, sin(u_time*0.2)*0.15);
+                    float blob2 = smoothstep(1.5, 0.0, length(aspectUV - pos2));
+                    
+                    vec2 pos3 = vec2(0.6 * (u_resolution.x/u_resolution.y), 0.2);
+                    float blob3 = smoothstep(1.2, 0.0, length(aspectUV - pos3));
+
+                    vec3 color = baseColor;
+                    color = mix(color, cyanBloom, blob2 * 0.5);
+                    color = mix(color, warmBloom, blob1 * 0.6);
+                    color = mix(color, warmBloom * 0.4, blob3 * 0.3);
+                    color += random(uv * u_time) * 0.04;
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `;
+            const vertexShader = `void main() { gl_Position = vec4(position, 1.0); }`;
+            const uniforms = { u_time: { value: 0.0 }, u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) } };
+            const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms });
+            scene.add(new THREE.Mesh(geometry, material));
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                uniforms.u_time.value += 0.008; 
+                renderer.render(scene, camera);
+            };
+            animate();
+            window.addEventListener('resize', () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // --- 全局滚动 & 监听逻辑 ---
+        const initScrollLogic = () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
+            }, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+            window.addEventListener('scroll', () => {
+                const activePage = document.querySelector('.page.active');
+                if(!activePage) return;
+                let scrollY = window.scrollY;
+                const wh = window.innerHeight;
+
+                // 01介绍
+                if(activePage.id === 'page-vision') {
+                    const sections = activePage.querySelectorAll('section');
+                    const dots = activePage.querySelectorAll('.nav-vision .nav-item');
+                    sections.forEach((sec, i) => {
+                        if(scrollY >= sec.offsetTop - wh/2) {
+                            dots.forEach(d => d.classList.remove('active'));
+                            if(dots[i]) dots[i].classList.add('active');
+                        }
+                    });
+                }
+
+                // 02视图
+                if(activePage.id === 'page-hardware') {
+                    // --- 灵犀 ---
+                    const secLingxi = document.getElementById('section-lingxi');
+                    if(secLingxi) {
+                        const rectL = secLingxi.getBoundingClientRect();
+                        let p1 = Math.max(0, Math.min(1, -rectL.top / (rectL.height - wh)));
+                        const step1 = Math.floor(p1 * 5.99);
+
+                        const planes = [document.getElementById('plane-1'), document.getElementById('plane-2'), document.getElementById('plane-3'), document.getElementById('plane-4'), document.getElementById('plane-5')];
+                        planes.forEach((plane, i) => {
+                            if(!plane) return;
+                            if (i === step1 - 1 && step1 > 0) {
+                                plane.style.transform = `translateZ(100px) scale(1.05)`;
+                                plane.style.opacity = "1"; plane.style.boxShadow = "0 20px 60px rgba(0,0,0,0.1)";
+                            } else if (step1 === 0) {
+                                const offsets = [160, 80, 0, -80, -160];
+                                plane.style.transform = `translateZ(${offsets[i]}px)`;
+                                plane.style.opacity = 1 - (Math.abs(offsets[i]) / 500);
+                            } else {
+                                const diff = i - (step1 - 1);
+                                plane.style.transform = `translateZ(${diff * -120}px)`;
+                                plane.style.opacity = diff === 0 ? "1" : (diff < 0 ? "0" : "0.15");
+                            }
+                        });
+                        document.querySelectorAll('.data-block-lingxi').forEach((b, i) => b.classList.toggle('active', i === step1));
+                        document.querySelectorAll('.nav-lingxi .nav-item').forEach((b, i) => b.classList.toggle('active', i === step1));
+                    }
+
+                    // --- 听风 ---
+                    const secTingfeng = document.getElementById('section-tingfeng');
+                    if(secTingfeng) {
+                        const rectT = secTingfeng.getBoundingClientRect();
+                        let p2 = Math.max(0, Math.min(1, -rectT.top / (rectT.height - wh)));
+                        const step2 = Math.floor(p2 * 4.99);
+
+                        const parts = [document.getElementById('part-1'), document.getElementById('part-2'), document.getElementById('part-3'), document.getElementById('part-4')];
+                        parts.forEach((part, i) => {
+                            if(!part) return;
+                            if (step2 === 0) {
+                                part.style.transform = `translate(-50%, -50%) translateX(${(i - 1.5) * 15}px) translateZ(${(i - 1.5) * -10}px)`;
+                                part.style.opacity = "1";
+                                part.style.filter = "none";
+                            } else {
+                                const focusIndex = step2 - 1;
+                                const diff = i - focusIndex;
+                                part.style.transform = `translate(-50%, -50%) translateX(${diff * 160}px) translateZ(${Math.abs(diff) * -100}px)`;
+                                part.style.opacity = diff === 0 ? "1" : (Math.abs(diff) === 1 ? "0.3" : "0.1");
+                                part.style.filter = diff === 0 ? "none" : (Math.abs(diff) === 1 ? "blur(2px)" : "blur(5px)");
+                            }
+                        });
+                        document.querySelectorAll('.data-block-tingfeng').forEach((b, i) => b.classList.toggle('active', i === step2));
+                        document.querySelectorAll('.nav-tingfeng .nav-item').forEach((b, i) => b.classList.toggle('active', i === step2));
+                    }
+
+                    // --- 流光 ---
+                    const secLumina = document.getElementById('section-lumina');
+                    if(secLumina) {
+                        const rectLum = secLumina.getBoundingClientRect();
+                        let p3 = Math.max(0, Math.min(1, -rectLum.top / (rectLum.height - wh)));
+                        const step3 = Math.floor(p3 * 5.99);
+
+                        const planesLum = [
+                            document.getElementById('plane-lum-1'), 
+                            document.getElementById('plane-lum-2'), 
+                            document.getElementById('plane-lum-3'), 
+                            document.getElementById('plane-lum-4'), 
+                            document.getElementById('plane-lum-5')
+                        ];
+                        
+                        planesLum.forEach((plane, i) => {
+                            if(!plane) return;
+                            if (step3 === 0) {
+                                const initialOffsets = [120, 60, 0, -60, -120];
+                                plane.style.transform = `translateZ(${initialOffsets[i]}px)`;
+                                plane.style.opacity = 1 - (Math.abs(initialOffsets[i]) / 400);
+                                plane.style.boxShadow = "none";
+                            } else if (i === step3 - 1) {
+                                plane.style.transform = `translateZ(150px) scale(1.08)`;
+                                plane.style.opacity = "1";
+                                plane.style.boxShadow = "0 30px 80px rgba(0,0,0,0.4)";
+                            } else {
+                                const diff = i - (step3 - 1);
+                                plane.style.transform = `translateZ(${diff * -90}px)`;
+                                plane.style.opacity = diff === 0 ? "1" : (diff < 0 ? "0" : "0.1");
+                                plane.style.boxShadow = "none";
+                            }
+                        });
+                        document.querySelectorAll('.data-block-lumina').forEach((b, i) => b.classList.toggle('active', i === step3));
+                        document.querySelectorAll('.nav-lumina .nav-item').forEach((b, i) => b.classList.toggle('active', i === step3));
+                    }
+                }
+            });
+            
+            // 鼠标视差联动
+            window.addEventListener('mousemove', (e) => {
+                const activePage = document.querySelector('.page.active');
+                if(activePage && activePage.id === 'page-hardware') {
+                    // 灵犀
+                    const xL = (window.innerWidth / 2 - e.clientX) / 50;
+                    const yL = (window.innerHeight / 2 - e.clientY) / 50;
+                    const modelLingxi = document.getElementById('model-lingxi');
+                    if(modelLingxi) modelLingxi.style.transform = `rotateX(${55 + yL}deg) rotateZ(${-25 + xL}deg)`;
+
+                    // 听风
+                    const xT = (window.innerWidth / 2 - e.clientX) / 80;
+                    const yT = (window.innerHeight / 2 - e.clientY) / 80;
+                    const modelTingfeng = document.getElementById('model-tingfeng');
+                    if(modelTingfeng) modelTingfeng.style.transform = `rotateY(${-20 + xT}deg) rotateX(${10 + yT}deg)`;
+
+                    // 流光
+                    const xLum = (window.innerWidth / 2 - e.clientX) / 60;
+                    const yLum = (window.innerHeight / 2 - e.clientY) / 60;
+                    const modelLumina = document.getElementById('model-lumina');
+                    if(modelLumina) modelLumina.style.transform = `rotateX(${50 + yLum}deg) rotateZ(${-30 + xLum}deg)`;
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebGL();
+            initScrollLogic();
+        });
+    </script>
+</body>
+</html>

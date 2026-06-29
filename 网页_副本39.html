@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yang Ding | Multidisciplinary Designer</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+
+    <style>
+        /* === 1. 全局与变量 === */
+        :root {
+            --bg-color: #f6f6f6;
+            --text-color: #000000;
+            --text-muted: #888888;
+            --border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        @media (hover: hover) and (pointer: fine) { body, a, button, .interactive { cursor: none; } }
+
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-color);
+            display: flex; min-height: 100vh; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased;
+        }
+
+        /* 🌟 双语切换核心 CSS */
+        body.lang-en .zh { display: none !important; }
+        body.lang-zh .en { display: none !important; }
+
+        /* === 2. 自定义跟随鼠标 === */
+        .cursor {
+            position: fixed; top: 0; left: 0; width: 12px; height: 12px;
+            border-radius: 50%; background-color: rgba(0, 0, 0, 0.3);
+            pointer-events: none; z-index: 99999; 
+        }
+
+        /* === 3. 左侧导航栏 === */
+        .sidebar { position: fixed; top: 0; left: 0; width: 20%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-right: 1px solid var(--border-color); }
+        .logo { position: absolute; top: 40px; left: 40px; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
+        .nav-capsule { position: relative; background-color: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 40px; padding: 8px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.02); pointer-events: auto; }
+        .nav-active-bg { position: absolute; top: 8px; left: 8px; height: 44px; width: 120px; background-color: #000000; border-radius: 30px; z-index: 1; }
+        .nav-links { list-style: none; padding: 0; margin: 0; position: relative; z-index: 2; display: flex; flex-direction: column; }
+        .nav-item-wrapper { position: relative; width: 120px; height: 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .nav-item { text-decoration: none; display: flex; flex-direction: row; position: absolute; left: 0; }
+        .nav-text-group { display: flex; align-items: center; justify-content: center; width: 120px; height: 44px; font-size: 0.95rem; font-weight: 500; color: var(--text-muted); transition: color 0.3s ease; }
+        .nav-text-group.secondary { position: absolute; left: 120px; color: var(--text-color); }
+
+        /* 🌟 语言切换按钮样式 (提升层级，脱离sidebar影响) */
+        .lang-switch { position: fixed; bottom: 40px; left: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 1001; display: flex; align-items: center; gap: 4px; }
+        .lang-switch:hover { color: var(--text-color); }
+        .lang-switch span.active { color: var(--text-color); }
+        .lang-separator { opacity: 0.3; font-weight: 400; }
+
+        /* 🎵 音乐切换按钮样式 */
+        .music-switch { position: fixed; bottom: 40px; right: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 1001; display: flex; align-items: center; gap: 4px; }
+        .music-switch:hover, .music-switch.playing { color: var(--text-color); }
+
+        /* === 4. 右侧主内容区 (首屏入场动画包装器) === */
+        .main-content { margin-left: 20%; width: 80%; display: flex; flex-direction: column; }
+        .section-base { min-height: 100vh; padding: 120px 8vw; display: flex; flex-direction: column; justify-content: center; }
+        
+        .hero-reveal { overflow: hidden; display: block; padding-bottom: 10px; margin-bottom: -10px; }
+        
+        .hero-title { font-size: clamp(3rem, 8vw, 9rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 1rem; }
+        .hero-subtitle { font-size: 1.5rem; font-weight: 400; color: var(--text-muted); margin-bottom: 2rem; }
+        .hero-desc { max-width: 550px; color: #555; line-height: 1.6; margin-bottom: 3.5rem; font-size: 1.1rem; }
+        .resume-btn { display: inline-flex; align-items: center; padding: 16px 32px; background-color: #000; color: #fff; border-radius: 40px; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: transform 0.4s ease; width: max-content; }
+        .resume-btn:hover { transform: scale(0.98); }
+
+        /* 🌟 经历时间轴样式强化 */
+        .section-title { font-size: 3rem; font-weight: 700; margin-bottom: 5rem; letter-spacing: -1px; }
+        .timeline { position: relative; padding-left: 3rem; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6rem; }
+        .timeline-item { position: relative; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 4rem; align-items: start; }
+        .timeline-item::before { content: ''; position: absolute; left: -3rem; top: 8px; width: 13px; height: 13px; background-color: var(--bg-color); border: 2px solid var(--text-color); border-radius: 50%; transform: translateX(-50%); }
+        
+        .timeline-date { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.8rem; }
+        .timeline-university { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.5px; }
+        .timeline-major { font-size: 1rem; color: #111; font-weight: 600; margin-bottom: 0.3rem; }
+        
+        .timeline-skills { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; margin-bottom: 1.5rem; letter-spacing: 0.2px; }
+        
+        .timeline-desc { font-size: 0.95rem; color: #555; line-height: 1.6; margin-bottom: 1.5rem; }
+        
+        .timeline-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem; }
+        .tag { padding: 8px 16px; border: 1px solid #e0e0e0; border-radius: 40px; font-size: 0.8rem; font-weight: 500; color: #333; background-color: #fff; display: inline-flex; align-items: center;}
+        
+        .tag.interactive-tag { 
+            cursor: none; border-color: var(--text-color); font-weight: 600; 
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .tag.interactive-tag:hover { 
+            background-color: var(--text-color); color: var(--bg-color); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .timeline-real-img { width: 100%; height: 260px; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); transition: transform 0.4s ease; }
+        .timeline-images:hover .timeline-real-img { transform: scale(1.03); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
+
+        /* === 5. WORKS 核心展厅 (纯净大图模式) === */
+        #works { padding: 0; background-color: var(--bg-color); }
+        .work-item { position: relative; width: 100%; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid var(--border-color); }
+        
+        .work-bg-wrapper { 
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); 
+            width: 70%; max-width: 1200px; aspect-ratio: 16 / 9; max-height: 75vh;
+            z-index: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.6s ease;
+        }
+        .work-bg-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; }
+        
+        .work-item:hover .work-bg-wrapper { transform: translate(-50%, -50%) scale(1.03); box-shadow: 0 30px 60px rgba(0,0,0,0.2); }
+        .work-item:hover .work-bg-img { transform: scale(1.05); }
+
+        .work-meta-floating { position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); z-index: 2; pointer-events: none; display: flex; gap: 1rem; }
+        .reveal-wrap { overflow: hidden; display: block; padding-top: 5px; padding-bottom: 10px; margin-top: -5px; }
+        .work-tag, .work-role { font-size: 0.8rem; font-weight: 600; padding: 8px 18px; border: 1px solid var(--text-color); border-radius: 40px; color: var(--text-color); background-color: var(--bg-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+        /* === 6. ARCHIVE 探索展区 (动态瀑布流) === */
+        .archive-section { width: 100%; padding: 120px 6vw 60px 8vw; background-color: var(--bg-color); min-height: 100vh; }
+        .archive-header { margin-bottom: 3rem; text-align: center; }
+        .archive-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        
+        /* 分类导航 Filters */
+        .archive-filters { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 4rem; }
+        .filter-btn { 
+            padding: 8px 20px; border: 1px solid #ccc; border-radius: 40px; 
+            font-size: 0.85rem; font-weight: 500; color: var(--text-muted); background: transparent; 
+            transition: all 0.3s ease; outline: none;
+        }
+        .filter-btn:hover { border-color: var(--text-color); color: var(--text-color); }
+        .filter-btn.active { background-color: var(--text-color); color: var(--bg-color); border-color: var(--text-color); }
+
+        /* 纯 CSS 瀑布流 (Masonry) */
+        .archive-grid { column-count: 3; column-gap: 2rem; width: 100%; }
+        .archive-item { break-inside: avoid; margin-bottom: 2rem; position: relative; width: 100%; border-radius: 8px; overflow: hidden; background-color: #fff; border: 1px solid var(--border-color); }
+        .archive-img { width: 100%; height: auto; display: block; background-color: #eee; min-height: 150px; object-fit: cover;}
+        
+        .archive-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); color: #fff; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; text-align: center;
+            opacity: 0; transition: opacity 0.3s ease; padding: 20px;
+        }
+        
+        .archive-icon { font-size: 2rem; margin-bottom: 10px; }
+        .archive-name { font-size: 1rem; font-weight: 600; margin-bottom: 5px; }
+        .archive-cat { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #ccc; }
+
+        .archive-item:hover .archive-overlay { opacity: 1; }
+        .archive-item:hover .archive-img { transform: scale(1.05); transition: transform 0.6s ease; }
+
+        /* === 7. 极简页脚模块 (Contact & Footer) === */
+        .footer-section { padding: 80px 8vw 60px 8vw; background-color: var(--bg-color); display: flex; flex-direction: column; border-top: 1px solid var(--border-color); }
+        .footer-heading { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 2rem; text-transform: uppercase; }
+        .footer-email { font-size: clamp(2.2rem, 5vw, 5.5rem); font-weight: 800; color: var(--text-color); text-decoration: none; display: inline-block; margin-bottom: 6rem; transition: opacity 0.3s ease; word-break: break-all; line-height: 1.1; letter-spacing: -1px; width: max-content; max-width: 100%; }
+        .footer-email .arrow { display: inline-block; font-weight: 400; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .footer-email:hover { opacity: 0.7; }
+        .footer-email:hover .arrow { transform: translate(15px, -15px); }
+        
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 2rem; flex-wrap: wrap; gap: 1rem; }
+        .copyright { font-size: 0.85rem; color: var(--text-muted); }
+        .back-to-top { background: none; border: none; font-size: 0.85rem; font-weight: 600; color: var(--text-color); cursor: pointer; padding: 0; transition: opacity 0.3s ease; outline: none; }
+        .back-to-top:hover { opacity: 0.6; }
+
+        /* === 8. 全屏主项目详情弹窗 (Project Modal) === */
+        .project-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); z-index: 999; transform: translateY(100%); display: block; overflow: hidden; } 
+        .modal-close-btn { position: absolute; top: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%; background-color: var(--text-color); color: var(--bg-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 300; z-index: 1000; border: none; outline: none; transition: transform 0.3s ease; }
+        .modal-close-btn:hover { transform: scale(0.9); }
+        
+        .modal-scroll-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none; }
+        .modal-scroll-container::-webkit-scrollbar { display: none; }
+
+        .modal-content-wrapper { position: relative; padding: 100px 5vw; margin: 0 auto; width: 100%; max-width: 900px; display: block; }
+        .modal-header { margin-bottom: 4rem; text-align: center; }
+        .modal-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; letter-spacing: -0.04em; margin-bottom: 1.5rem; line-height: 1.1; text-transform: uppercase; }
+        .modal-role-highlight { display: inline-block; padding: 8px 24px; border: 2px solid #000; border-radius: 40px; font-weight: 600; font-size: 0.95rem; margin-bottom: 3rem; }
+        
+        .modal-body { font-size: 1.1rem; line-height: 1.8; color: #333; padding: 0; }
+        .modal-body img { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); margin-bottom: 3rem; }
+        
+        .launch-btn-container { text-align: center; margin-top: 1rem; margin-bottom: 4rem; }
+        .launch-btn { display: inline-flex; align-items: center; padding: 18px 36px; background-color: #000; color: #fff; text-decoration: none; font-weight: 700; letter-spacing: 1px; border-radius: 50px; transition: transform 0.3s ease; }
+        .launch-btn:hover { transform: scale(0.98); background-color: #333; }
+
+        /* === 9. Archive 沉浸式灯箱 (Lightbox) === */
+        .lightbox-overlay { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background-color: rgba(255, 255, 255, 0.98); 
+            z-index: 10000; 
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        .lightbox-overlay.active { opacity: 1; pointer-events: auto; }
+        .lightbox-close { 
+            position: absolute; top: 30px; right: 30px; 
+            color: #000; 
+            font-size: 2rem; background: none; border: none; outline: none; transition: transform 0.3s ease; 
+        }
+        .lightbox-close:hover { transform: scale(0.8); }
+        
+        .lightbox-content { width: 90%; height: 90%; display: flex; align-items: center; justify-content: center; }
+        .lightbox-content img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .lightbox-content video { max-width: 90%; max-height: 90%; border-radius: 12px; outline: none; box-shadow: 0 20px 50px rgba(0,0,0,0.1); background: #000;}
+        
+        .lightbox-web-card { background: var(--bg-color); border: 1px solid rgba(0,0,0,0.05); padding: 4rem; border-radius: 16px; text-align: center; max-width: 500px;}
+        .lightbox-web-card h2 { margin-bottom: 1rem; font-size: 1.5rem; color: #000;}
+        .lightbox-web-card p { color: #666; margin-bottom: 2rem;}
+
+        /* === 10. 📱 移动端精细适配 === */
+        @media (max-width: 768px) {
+            .cursor { display: none !important; }
+            body, a, button, .interactive { cursor: auto !important; }
+            
+            .sidebar { width: 100%; height: auto; top: auto; bottom: 20px; left: 0; border-right: none; align-items: center; pointer-events: none; }
+            .logo { top: 20px; left: 5vw; position: fixed; }
+            .nav-capsule { flex-direction: row; padding: 6px; border-radius: 50px; pointer-events: auto; }
+            .nav-links { flex-direction: row; }
+            .nav-item-wrapper { width: 80px; height: 40px; }
+            .nav-active-bg { width: 80px; height: 40px; top: 6px; left: 6px; }
+            .nav-text-group { width: 80px; height: 40px; font-size: 0.85rem; }
+            .nav-text-group.secondary { left: 80px; }
+            
+            /* 移动端调整语言切换按钮至弹窗关闭按钮旁边，防止遮挡或被遮挡 */
+            .lang-switch { top: 30px; right: 80px; bottom: auto; left: auto; }
+            /* 移动端音乐开关置于更右侧 */
+            .music-switch { top: 30px; right: 20px; bottom: auto; left: auto; }
+
+            .main-content { margin-left: 0; width: 100%; }
+            .section-base { padding: 100px 6vw; }
+            
+            .timeline { padding-left: 1.5rem; gap: 4rem; }
+            .timeline-item { grid-template-columns: 1fr; gap: 1.5rem; }
+            .timeline-item::before { left: -1.5rem; width: 10px; height: 10px; top: 6px;}
+            
+            .work-bg-wrapper { width: 90%; aspect-ratio: 4/3; max-height: 60vh;}
+            .work-meta-floating { bottom: 12%; width: 100%; }
+            
+            .archive-section { padding: 80px 6vw 80px 6vw; }
+            .archive-grid { column-count: 2; column-gap: 1rem; } 
+            .archive-item { margin-bottom: 1rem; }
+
+            .footer-section { padding: 60px 6vw 40px 6vw; }
+            .footer-email { font-size: clamp(1.8rem, 7vw, 3rem); margin-bottom: 4rem; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; }
+
+            .ui-grid { flex-direction: column !important; gap: 1.5rem !important; margin: 2rem 0 !important; }
+            .ui-grid img { width: 100% !important; margin: 0 !important; }
+            .modal-content-wrapper { padding: 80px 6vw; }
+            
+            .lightbox-web-card { padding: 2rem; width: 90%;}
+        }
+        
+        @media (max-width: 480px) {
+            .archive-grid { column-count: 1; } 
+        }
+    </style>
+</head>
+<body class="lang-en">
+
+    <div class="cursor"></div>
+
+    <nav class="sidebar">
+        <div class="logo">YD.</div>
+        <div class="nav-capsule">
+            <div class="nav-active-bg"></div>
+            <ul class="nav-links">
+                <li class="nav-item-wrapper interactive"><a href="#home" class="nav-item">
+                    <span class="nav-text-group primary"><span class="en">Home</span><span class="zh">主页</span></span>
+                    <span class="nav-text-group secondary"><span class="en">Home</span><span class="zh">主页</span></span>
+                </a></li>
+                <li class="nav-item-wrapper interactive"><a href="#about" class="nav-item">
+                    <span class="nav-text-group primary"><span class="en">About</span><span class="zh">简介</span></span>
+                    <span class="nav-text-group secondary"><span class="en">About</span><span class="zh">简介</span></span>
+                </a></li>
+                <li class="nav-item-wrapper interactive"><a href="#works" class="nav-item">
+                    <span class="nav-text-group primary"><span class="en">Works</span><span class="zh">作品</span></span>
+                    <span class="nav-text-group secondary"><span class="en">Works</span><span class="zh">作品</span></span>
+                </a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="lang-switch interactive" onclick="toggleLanguage()">
+        <span class="lang-en active">EN</span>
+        <span class="lang-separator">/</span>
+        <span class="lang-zh">中</span>
+    </div>
+
+    <audio id="bg-music" loop preload="auto">
+        <source src="./Background_Music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="music-switch interactive" id="music-toggle">
+        <span class="en">Sound: OFF</span>
+        <span class="zh">音乐: 关</span>
+    </div>
+
+    <main class="main-content">
+        <section id="home" class="section-base">
+            <div class="hero-reveal"><h1 class="hero-title">YANG DING</h1></div>
+            <div class="hero-reveal"><p class="hero-subtitle"><span class="en">Designer</span><span class="zh">设计师</span></p></div>
+            <div class="hero-reveal">
+                <p class="hero-desc">
+                    <span class="en">A multidisciplinary designer focusing on Industrial Design, Visual Art, and Creative Development.</span>
+                    <span class="zh">一名多领域跨界设计师，专注于工业设计、视觉艺术与交互创意开发。</span>
+                </p>
+            </div>
+            <div class="hero-reveal">
+                <a href="./Resume_en.pdf" download="Resume_en.pdf" target="_blank" class="resume-btn interactive en">Download Resume</a>
+                <a href="./Resume_zh.pdf" download="Resume_zh.pdf" target="_blank" class="resume-btn interactive zh">下载简历</a>
+            </div>
+        </section>
+        
+        <section id="about" class="section-base">
+            <h2 class="section-title"><span class="en">Background.</span><span class="zh">教育背景.</span></h2>
+            <div class="timeline">
+                
+                <div class="timeline-item interactive">
+                    <div class="timeline-text">
+                        <div class="timeline-date">2022.09 — 2023.01</div>
+                        <div class="timeline-university"><span class="en">Fuzhou Univ.</span><span class="zh">福州大学</span></div>
+                        <div class="timeline-major"><span class="en">Industrial Design</span><span class="zh">工业设计</span></div>
+                        
+                        <div class="timeline-skills">
+                            <span class="en">Design Sketching &middot; Perspective Drawing &middot; Color Theory</span>
+                            <span class="zh">设计素描 &middot; 设计透视 &middot; 设计色彩</span>
+                        </div>
+                        
+                        <div class="timeline-desc">
+                            <span class="en">Maintained the top GPA in the Industrial Design major while intensively studying German and demonstrating athletic excellence in track and field.</span>
+                            <span class="zh">在保持工业设计专业第一的同时，高强度并轨学习德语，并在田径赛场上斩获金牌。</span>
+                        </div>
+                        
+                        <div class="timeline-tags">
+                            <span class="tag interactive interactive-tag" data-cert="./FZU_2022_ranking&points.jpg" data-title-en="GPA Rank 1" data-title-zh="专业绩点排名第一"><span class="en">🥇 GPA Rank 1</span><span class="zh">🥇 专业排名第一</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./2023_goethe_zertifikat.jpg" data-title-en="Goethe B1 Certificate" data-title-zh="歌德 B1 证书"><span class="en">📜 Goethe Deutsch B1</span><span class="zh">📜 德语歌德 B1 证书</span></span>
+                            
+                            <span class="tag interactive interactive-tag" data-cert="./FZU_sports.jpg" data-title-en="Sprint Gold Medal" data-title-zh="短跑金牌"><span class="en">🥇🥈 Relay Gold & Sprint Silver</span><span class="zh">🥇🥈 4x100m金牌&100m银牌</span></span>
+                        </div>
+                    </div>
+                    <div class="timeline-images"><img src="./FZU_2022.png" alt="FZU 2022" class="timeline-real-img"></div>
+                </div>
+                
+                <div class="timeline-item interactive">
+                    <div class="timeline-text">
+                        <div class="timeline-date">2023.08 — 2024.05</div>
+                        <div class="timeline-university"><span class="en">Leipzig Univ.</span><span class="zh">莱比锡大学</span></div>
+                        <div class="timeline-major"><span class="en">Language Course & Pre-studies</span><span class="zh">语言预科</span></div>
+                        
+                        <div class="timeline-skills">
+                            <span class="en">German Language &middot; Cross-Cultural Comm &middot; Independent Problem-Solving</span>
+                            <span class="zh">德语学习 &middot; 跨文化交流 &middot; 独立问题解决</span>
+                        </div>
+                        
+                        <div class="timeline-desc">
+                            <span class="en">Rapidly completed language assessments to achieve the C1 certificate, building a solid linguistic foundation for rigorous scientific studies.</span>
+                            <span class="zh">以极快的速度通关语言班各项测试并考取 C1 证书，为后续硬核理科学习打下坚实的语言底座。</span>
+                        </div>
+                        
+                        <div class="timeline-tags">
+                            <span class="tag interactive interactive-tag" data-cert="./2023_Uni_Leipzig_Zulassung.jpg" data-title-en="Leipzig Univ. Admission" data-title-zh="莱比锡大学语言班录取"><span class="en">🎓 Uni Leipzig Admission</span><span class="zh">🎓 莱比锡大学录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./interDaF.jpg" data-title-en="interDaF C1 Certificate" data-title-zh="interDaF C1 德语证书"><span class="en">📜 Language Course Certificate</span><span class="zh">📜 语言班证书</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./2024_telc_Zertifikat.jpg" data-title-en="telc C1 Certificate" data-title-zh="telc C1 德语证书"><span class="en">📜 telc Deutsch C1</span><span class="zh">📜 德语 telc C1 证书</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./Qingming.jpg" data-title-en="Artistic Exploration (Illustration)" data-title-zh="艺术探索 (清明上河图白描)"><span class="en">🖌️ Artistic Exploration</span><span class="zh">🖌️ 艺术探索</span></span>
+                        </div>
+                    </div>
+                    <div class="timeline-images"><img src="./Uni_Leipzig_2023.png" alt="Leipzig Univ" class="timeline-real-img"></div>
+                </div>
+                
+                <div class="timeline-item interactive">
+                    <div class="timeline-text">
+                        <div class="timeline-date">2024.09 — 2025.01</div>
+                        <div class="timeline-university"><span class="en">LMU Munich</span><span class="zh">慕尼黑大学</span></div>
+                        <div class="timeline-major"><span class="en">Theoretical Physics</span><span class="zh">理论物理</span></div>
+                        
+                        <div class="timeline-skills">
+                            <span class="en">Logical Analysis &middot; Scientific Literacy</span>
+                            <span class="zh">逻辑分析 &middot; 科学素养</span>
+                        </div>
+                        
+                        <div class="timeline-desc">
+                            <span class="en">Admitted by 4 top-tier German universities for Physics. Paused studies due to a medical leave, which provided a period for reflection and a renewed dedication to my original passion.</span>
+                            <span class="zh">斩获 4 所德国顶尖名校物理系录取。后因身体原因休学调理，这段停顿让我重新审视内心，决定带着理科的严谨逻辑回归初心。</span>
+                        </div>
+                        
+                        <div class="timeline-tags">
+                            <span class="tag interactive interactive-tag" data-cert="./2024_LMU_Zulassung.jpg" data-title-en="LMU Munich Admission" data-title-zh="慕尼黑大学物理系录取"><span class="en">🎓 LMU Offer</span><span class="zh">🎓 LMU 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./2024_TUM_Zulassung.jpg" data-title-en="TUM Admission" data-title-zh="慕尼黑工业大学物理系录取"><span class="en">🎓 TUM Offer</span><span class="zh">🎓 TUM 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./2024_KIT_Zulassung.jpg" data-title-en="KIT Admission" data-title-zh="卡尔斯鲁厄理工物理系录取"><span class="en">🎓 KIT Offer</span><span class="zh">🎓 KIT 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./2024_RWTH_Zulassung.jpg" data-title-en="RWTH Aachen Admission" data-title-zh="亚琛工业大学物理系录取"><span class="en">🎓 RWTH Offer</span><span class="zh">🎓 RWTH 录取</span></span>
+                        </div>
+                    </div>
+                    <div class="timeline-images"><img src="./LMU_2024.png" alt="LMU Munich" class="timeline-real-img"></div>
+                </div>
+                
+                <div class="timeline-item interactive">
+                    <div class="timeline-text">
+                        <div class="timeline-date">2025.04 — Present</div>
+                        <div class="timeline-university"><span class="en">Fuzhou Univ.</span><span class="zh">福州大学</span></div>
+                        <div class="timeline-major"><span class="en">Industrial Design</span><span class="zh">工业设计</span></div>
+                        
+                        <div class="timeline-skills">
+                            <span class="en">Engineering Drafting &middot; 3D Modeling (Rhino) &middot; UI/UX Design</span>
+                            <span class="zh">工程制图 &middot; 3D建模 (Rhino) &middot; UI/UX设计</span>
+                        </div>
+                        
+                        <div class="timeline-desc">
+                            <span class="en">Returned to deep-dive into Design, while continuing to write new chapters of honor on the sports field.</span>
+                            <span class="zh">满血回归设计领域深耕，同时在体育赛场上斩获篮球联赛金牌，续写荣誉。</span>
+                        </div>
+                        
+                        <div class="timeline-tags">
+                            <span class="tag interactive interactive-tag" data-cert="./FZU_sports.jpg" data-title-en="Basketball Gold Medal" data-title-zh="篮球联赛金牌"><span class="en">🥇🥈 Hoops Champion & Relay Silver</span><span class="zh">🥇🥈 篮球赛金牌&4x100m银牌</span></span>
+                        </div>
+                    </div>
+                    <div class="timeline-images"><img src="./FZU_2025.png" alt="FZU 2025" class="timeline-real-img"></div>
+                </div>
+                
+            </div>
+        </section>
+
+        <section id="works">
+            <div style="padding: 120px 8vw 40px 8vw; background-color: var(--bg-color); position: relative; z-index: 10;">
+                <h2 class="section-title" style="margin-bottom: 0;"><span class="en">Selected Works.</span><span class="zh">主要作品.</span></h2>
+            </div>
+            
+            <div class="work-item interactive" data-project="changan">
+                <div class="work-bg-wrapper"><img src="./Chang'an_Illustrated_Chronicl_cover.png" alt="CHANG'AN" class="work-bg-img"></div>
+                <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">Web / Visual Data</span><span class="zh">网页 / 数据可视化</span></span><span class="work-role"><span class="en">Solo Project</span><span class="zh">个人项目</span></span></div></div>
+            </div>
+            <div class="work-item interactive" data-project="aetherleaf">
+                <div class="work-bg-wrapper"><img src="./Aetherleaf_cover.png" alt="AetherLeaf" class="work-bg-img"></div>
+                <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">Web Interactive</span><span class="zh">交互网页</span></span><span class="work-role"><span class="en">Solo Project</span><span class="zh">个人项目</span></span></div></div>
+            </div>
+            <div class="work-item interactive" data-project="deeptalk">
+                <div class="work-bg-wrapper"><img src="./Deeptalk_cover.png" alt="Deeptalk" class="work-bg-img"></div>
+                <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">UI / UX Design</span><span class="zh">UI/UX 设计</span></span><span class="work-role"><span class="en">Team Project</span><span class="zh">团队项目</span></span></div></div>
+            </div>
+            <div class="work-item interactive" data-project="magiccube">
+                <div class="work-bg-wrapper"><img src="./Magic_cube_cover.png" alt="Magic Cube" class="work-bg-img"></div>
+                <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">Industrial Design</span><span class="zh">工业设计</span></span><span class="work-role"><span class="en">Solo Project</span><span class="zh">个人项目</span></span></div></div>
+            </div>
+        </section>
+
+        <section id="archive" class="archive-section">
+            <div class="archive-header">
+                <h2 class="archive-title"><span class="en">Archive & Explorations</span><span class="zh">探索与归档</span></h2>
+                
+                <div class="archive-filters">
+                    <button class="filter-btn interactive active" data-filter="all"><span class="en">ALL</span><span class="zh">全部</span></button>
+                    <button class="filter-btn interactive" data-filter="product"><span class="en">PRODUCT & CRAFT</span><span class="zh">产品与工艺</span></button>
+                    <button class="filter-btn interactive" data-filter="digital"><span class="en">DIGITAL & MOTION</span><span class="zh">数字与动效</span></button>
+                    <button class="filter-btn interactive" data-filter="sketch"><span class="en">SKETCH & DRAFT</span><span class="zh">手绘与制图</span></button>
+                    <button class="filter-btn interactive" data-filter="software"><span class="en">SOFTWARE & 3D</span><span class="zh">软件与3D</span></button>
+                </div>
+            </div>
+            
+            <div class="archive-grid" id="archive-grid-container">
+                </div>
+        </section>
+
+        <footer id="contact" class="footer-section">
+            <div class="footer-heading">
+                <span class="en">LET'S COLLABORATE</span>
+                <span class="zh">开启对话</span>
+            </div>
+            
+            <a href="mailto:Lichtkreis99@gmail.com" class="footer-email interactive">
+                Lichtkreis99@gmail.com <span class="arrow">↗</span>
+            </a>
+            
+            <div class="footer-bottom">
+                <div class="copyright">
+                    <span class="en">&copy; 2026 Yang Ding. Handcrafted with Code.</span>
+                    <span class="zh">&copy; 2026 Yang Ding. 纯手工代码构建.</span>
+                </div>
+                <button class="back-to-top interactive" onclick="lenis.scrollTo(0)">
+                    <span class="en">BACK TO TOP ↑</span>
+                    <span class="zh">回到顶部 ↑</span>
+                </button>
+            </div>
+        </footer>
+
+    </main>
+
+    <div class="project-modal" id="project-modal">
+        <button class="modal-close-btn interactive" id="modal-close">✕</button>
+        <div class="modal-scroll-container" id="modal-scroll-container" data-lenis-prevent="true">
+            <div class="modal-content-wrapper">
+                <div class="modal-header">
+                    <h1 class="modal-title" id="modal-title-display">Title</h1>
+                    <div class="modal-role-highlight" id="modal-role-display">Role</div>
+                </div>
+                <div class="modal-body" id="modal-body-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lightbox-overlay" id="lightbox">
+        <button class="lightbox-close interactive" id="lightbox-close">✕</button>
+        <div class="lightbox-content" id="lightbox-content">
+            </div>
+    </div>
+
+    <script>
+        // 🌟 全局双语状态管理与当前开启状态跟踪
+        let currentLang = 'en';
+        let currentOpenProjectId = null;
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            document.body.classList.toggle('lang-en', currentLang === 'en');
+            document.body.classList.toggle('lang-zh', currentLang === 'zh');
+            
+            document.querySelector('.lang-switch .lang-en').classList.toggle('active', currentLang === 'en');
+            document.querySelector('.lang-switch .lang-zh').classList.toggle('active', currentLang === 'zh');
+
+            const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+            renderArchive(activeFilter);
+
+            // 当弹窗存在且处于开启状态时，动态刷新弹窗内部的双语内容
+            if (currentOpenProjectId) {
+                updateModalContent(currentOpenProjectId);
+            }
+        }
+
+        // === 🎵 音乐控制逻辑 ===
+        const bgMusic = document.getElementById('bg-music');
+        const musicToggle = document.getElementById('music-toggle');
+        let isMusicPlaying = false;
+
+        // 设置适宜的背景音量（建议20%，以免声音过大）
+        bgMusic.volume = 0.2;
+
+        musicToggle.addEventListener('click', () => {
+            if (isMusicPlaying) {
+                // 暂停音乐
+                bgMusic.pause();
+                isMusicPlaying = false;
+                musicToggle.classList.remove('playing');
+                musicToggle.querySelector('.en').innerText = 'Sound: OFF';
+                musicToggle.querySelector('.zh').innerText = '音乐: 关';
+            } else {
+                // 播放音乐
+                bgMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    musicToggle.classList.add('playing');
+                    musicToggle.querySelector('.en').innerText = 'Sound: ON';
+                    musicToggle.querySelector('.zh').innerText = '音乐: 开';
+                }).catch(error => {
+                    console.log("音频播放失败 (浏览器可能拦截了自动播放):", error);
+                });
+            }
+        });
+
+        // --- 1. GSAP & Lenis 初始化 ---
+        gsap.registerPlugin(ScrollTrigger);
+        const isMobileDevice = window.innerWidth <= 768;
+        const lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smooth: !isMobileDevice });
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+        gsap.ticker.lagSmoothing(0);
+
+        // 🌟 GSAP 首屏电影级入场动效初始化设置 (加入音乐按钮的入场)
+        gsap.set('.logo, .nav-capsule, .lang-switch, .music-switch', { x: -30, opacity: 0 });
+        gsap.set('.hero-reveal > *', { y: 80, opacity: 0 });
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            const enterTl = gsap.timeline();
+            enterTl.to('.logo, .nav-capsule, .lang-switch, .music-switch', { x: 0, opacity: 1, duration: 1, stagger: 0.1, ease: 'power3.out', delay: 0.1 })
+                   .to('.hero-reveal > *', { y: 0, opacity: 1, duration: 1.2, stagger: 0.15, ease: 'power4.out' }, "-=0.6");
+        });
+
+        // --- 2. 鼠标跟随逻辑 ---
+        const cursor = document.querySelector('.cursor');
+        
+        if (!isMobileDevice) {
+            gsap.set(cursor, { xPercent: -50, yPercent: -50 });
+        }
+        
+        function initCursorInteraction() {
+            if (isMobileDevice) return;
+            const interactives = document.querySelectorAll('a:not(.cursor-bound), button:not(.cursor-bound), .interactive:not(.cursor-bound)');
+            
+            interactives.forEach(el => {
+                el.classList.add('cursor-bound'); 
+                
+                el.addEventListener('mouseenter', () => {
+                    if (el.classList.contains('archive-item')) {
+                        gsap.to(cursor, { scale: 1.5, backgroundColor: "#ffffff", duration: 0.3, ease: "power2.out" });
+                    } else if (el.id === 'lightbox-close' || el.id === 'modal-close') {
+                        gsap.to(cursor, { scale: 2, backgroundColor: "#000000", duration: 0.3, ease: "power2.out" });
+                    } else {
+                        gsap.to(cursor, { scale: 1.5, backgroundColor: "#000000", duration: 0.3, ease: "power2.out" });
+                    }
+                });
+                
+                el.addEventListener('mouseleave', () => {
+                    gsap.to(cursor, { scale: 1, backgroundColor: "rgba(0, 0, 0, 0.3)", duration: 0.3, ease: "power2.out" });
+                });
+            });
+        }
+        
+        if (!isMobileDevice) {
+            const xTo = gsap.quickTo(cursor, "x", { duration: 0.25, ease: "power3.out" });
+            const yTo = gsap.quickTo(cursor, "y", { duration: 0.25, ease: "power3.out" });
+
+            window.addEventListener('mousemove', (e) => {
+                xTo(e.clientX);
+                yTo(e.clientY);
+            });
+            initCursorInteraction();
+        }
+
+        // --- 3. 响应式导航条 ---
+        const navItems = document.querySelectorAll('.nav-item-wrapper');
+        const activeBg = document.querySelector('.nav-active-bg');
+        let currentIndex = 0;
+        
+        function updateNavColors() {
+            navItems.forEach((item, index) => {
+                const pText = item.querySelector('.primary'), sText = item.querySelector('.secondary');
+                if (index === currentIndex) { pText.style.color = '#fff'; sText.style.color = '#fff'; } 
+                else { pText.style.color = 'var(--text-muted)'; sText.style.color = '#000'; }
+            });
+        }
+
+        function setActiveNav(index) {
+            if (index === currentIndex) return;
+            currentIndex = index;
+            gsap.to(activeBg, { 
+                x: isMobileDevice ? index * 80 : 0, 
+                y: isMobileDevice ? 0 : index * 44, 
+                duration: 0.6, ease: "power3.out", onUpdate: updateNavColors 
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            gsap.set(activeBg, { x: isMobileDevice ? currentIndex * 80 : 0, y: isMobileDevice ? 0 : currentIndex * 44 });
+        });
+
+        navItems.forEach((wrapper, index) => {
+            if (!isMobileDevice) {
+                wrapper.addEventListener('mouseenter', () => gsap.to(wrapper.querySelector('.nav-item'), { x: -120, duration: 0.4, ease: "power2.out" }));
+                wrapper.addEventListener('mouseleave', () => gsap.to(wrapper.querySelector('.nav-item'), { x: 0, duration: 0.4, ease: "power2.out" }));
+            }
+            wrapper.addEventListener('click', (e) => { e.preventDefault(); lenis.scrollTo(wrapper.querySelector('a').getAttribute('href')); });
+        });
+
+        // 🌟 解决作品导航未高亮：按具体 ID 绑定能够精确关联至非 section-base 的作品区块
+        const sections = [
+            document.getElementById('home'),
+            document.getElementById('about'),
+            document.getElementById('works')
+        ];
+        
+        sections.forEach((section, index) => {
+            if (section) {
+                ScrollTrigger.create({ 
+                    trigger: section, 
+                    start: "top center", 
+                    end: "bottom center", 
+                    onEnter: () => setActiveNav(index), 
+                    onEnterBack: () => setActiveNav(index) 
+                });
+            }
+        });
+        updateNavColors();
+
+        // --- 4. 滚动视差特效 (主展厅) ---
+        document.querySelectorAll('.work-item').forEach(item => {
+            gsap.to(item.querySelector('.work-bg-wrapper'), {
+                yPercent: 15, ease: "none",
+                scrollTrigger: { trigger: item, start: "top bottom", end: "bottom top", scrub: true }
+            });
+            gsap.set(item.querySelectorAll('.reveal-inner'), { yPercent: 120 });
+            ScrollTrigger.create({
+                trigger: item, start: "top 60%", 
+                onEnter: () => gsap.to(item.querySelectorAll('.reveal-inner'), { yPercent: 0, duration: 1, stagger: 0.1, ease: "power4.out" })
+            });
+        });
+
+        // --- 5. 主项目 Modal 及其双语数据字典 ---
+        const modal = document.getElementById('project-modal');
+        const scrollContainer = document.getElementById('modal-scroll-container'); 
+        const closeBtn = document.getElementById('modal-close');
+        
+        const projectData = {
+            'aetherleaf': { 
+                title: { en: "AETHERLEAF", zh: "AETHERLEAF 幻叶" }, 
+                role: { en: "Solo Project | Product Design & Creative Dev", zh: "个人项目 | 产品设计与创意开发" }, 
+                body: { 
+                    en: `<img src="./AetherLeaf.png" alt="AetherLeaf Detail">
+                         <div class="launch-btn-container"><a href="./AetherLeaf.html" target="_blank" class="launch-btn interactive">↗ Launch Web Experience</a></div>`,
+                    zh: `<img src="./AetherLeaf.png" alt="AetherLeaf Detail">
+                         <div class="launch-btn-container"><a href="./AetherLeaf.html" target="_blank" class="launch-btn interactive">↗ 体验完整网页</a></div>`
+                }
+            },
+            'changan': { 
+                title: { en: "CHANG'AN ILLUSTRATED CHRONICLE", zh: "CHANG'AN 长安图志" }, 
+                role: { en: "Solo Project | Full-stack & Visual Dev", zh: "个人项目 | 全栈与视觉开发" }, 
+                body: {
+                    en: `<img src="./Chang'an_Illustrated_Chronicl.png" alt="Chang'an Detail">
+                         <div class="launch-btn-container"><a href="./Chang'an_Illustrated_Chronicl.html" target="_blank" class="launch-btn interactive">↗ Enter Digital Sandbox</a></div>`,
+                    zh: `<img src="./Chang'an_Illustrated_Chronicl.png" alt="Chang'an Detail">
+                         <div class="launch-btn-container"><a href="./Chang'an_Illustrated_Chronicl.html" target="_blank" class="launch-btn interactive">↗ 进入大唐数字沙盘</a></div>`
+                }
+            },
+            'deeptalk': { 
+                title: { en: "DEEPTALK", zh: "DEEPTALK 深蓝对话" }, 
+                role: { en: "Team Project | Pre-research, Info Integration & Core UI Design", zh: "团队项目 | 前期调研、信息整合与部分UI设计" }, 
+                body: {
+                    en: `<img src="./Deeptalk_part01.png" alt="Research and Analysis" style="margin-bottom: 3rem;">
+                         <img src="./Deeptalk_part02.png" alt="Concept and Design" style="margin-bottom: 3rem;">
+                         <div style="text-align: center; margin: 6rem 0 3rem 0;">
+                             <h3 style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;">— CORE UI DESIGN EXECUTION —</h3>
+                             <p style="color: #888; font-size: 0.95rem; margin-top: 0.5rem; font-weight: 500;">Independent Contribution</p>
+                         </div>
+                         <div style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
+                             <img src="./Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 01">
+                             <img src="./Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 02">
+                             <img src="./Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 03">
+                         </div>
+                         <img src="./Deeptalk_part03.png" alt="Final Presentation" style="margin-bottom: 3rem;">`,
+                    zh: `<img src="./Deeptalk_part01.png" alt="研究与分析" style="margin-bottom: 3rem;">
+                         <img src="./Deeptalk_part02.png" alt="概念与设计" style="margin-bottom: 3rem;">
+                         <div style="text-align: center; margin: 6rem 0 3rem 0;">
+                             <h3 style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;">— 部分 UI 界面呈现 —</h3>
+                             <p style="color: #888; font-size: 0.95rem; margin-top: 0.5rem; font-weight: 500;">个人独立产出部分</p>
+                         </div>
+                         <div style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
+                             <img src="./Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 01">
+                             <img src="./Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 02">
+                             <img src="./Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 03">
+                         </div>
+                         <img src="./Deeptalk_part03.png" alt="方案呈现" style="margin-bottom: 3rem;">`
+                }
+            },
+            'magiccube': { 
+                title: { en: "MAGIC CUBE ELECTRIC CLOCK", zh: "MAGIC CUBE 电子钟" }, 
+                role: { en: "Solo Project | Product & Interaction Design", zh: "个人项目 | 产品与交互设计" }, 
+                body: {
+                    en: `<img src="./Magic_cube.png" alt="Magic Cube Detail">`,
+                    zh: `<img src="./Magic_cube.png" alt="Magic Cube Detail">`
+                }
+            },
+            'atmosphere': {
+                title: { en: "Atmosphere x Floor Lamp", zh: "Atmosphere 氛围落地灯" },
+                role: { en: "Product Design", zh: "产品设计" },
+                body: { en: `<img src="./Atmosphere_floor_lamp.png" alt="Atmosphere Floor Lamp Detail">`, zh: `<img src="./Atmosphere_floor_lamp.png" alt="Atmosphere Floor Lamp Detail">` }
+            },
+            'deadwood': {
+                title: { en: "The Chair of Deadwood", zh: "The Chair of Deadwood 枯木椅" },
+                role: { en: "Product Design", zh: "产品设计" },
+                body: { en: `<img src="./The_chair_of_deadwood.png" alt="The Chair of Deadwood Detail">`, zh: `<img src="./The_chair_of_deadwood.png" alt="The Chair of Deadwood Detail">` }
+            },
+            'coffeetable': {
+                title: { en: "Geometric Coffee Table", zh: "Geometric 几何咖啡桌" },
+                role: { en: "Product Design", zh: "产品设计" },
+                body: { en: `<img src="./Geometric_Coffee_Table.png" alt="Geometric Coffee Table Detail">`, zh: `<img src="./Geometric_Coffee_Table.png" alt="Geometric Coffee Table Detail">` }
+            },
+            'fuzhouzhulang': {
+                title: { en: "Fuzhouzhulang (Team)", zh: "福舟逐浪 (团队项目)" },
+                role: { en: "Product Design | Team Project", zh: "产品设计 | 团队项目" },
+                body: { en: `<img src="./Fuzhouzhulang.png" alt="Fuzhouzhulang Detail">`, zh: `<img src="./Fuzhouzhulang.png" alt="Fuzhouzhulang Detail">` }
+            }
+        };
+
+        function updateModalContent(projectId) {
+            const data = projectData[projectId];
+            document.getElementById('modal-title-display').innerText = data.title[currentLang];
+            document.getElementById('modal-role-display').innerText = data.role[currentLang];
+            document.getElementById('modal-body-display').innerHTML = data.body[currentLang];
+        }
+
+        function openProjectModal(projectId) {
+            lenis.stop(); 
+            scrollContainer.scrollTop = 0; 
+            currentOpenProjectId = projectId; // 记录当前开启状态
+            
+            updateModalContent(projectId);
+            
+            initCursorInteraction(); 
+            gsap.to(modal, { y: "0%", duration: 0.8, ease: "power4.inOut" });
+        }
+
+        document.querySelectorAll('.work-item').forEach(item => {
+            item.addEventListener('click', () => openProjectModal(item.getAttribute('data-project')));
+        });
+
+        closeBtn.addEventListener('click', () => {
+            gsap.to(modal, { y: "100%", duration: 0.8, ease: "power4.inOut", onComplete: () => { 
+                lenis.start(); 
+                document.getElementById('modal-body-display').innerHTML = ''; 
+                currentOpenProjectId = null; // 清理开启记录
+            }});
+        });
+
+        // ==========================================
+        // 6. ARCHIVE 瀑布流数据构建与筛选
+        // ==========================================
+        
+        const archiveData = [
+            { id: 'p1', cat: 'product', title: {en:'Atmosphere x Floor Lamp', zh:'Atmosphere 氛围落地灯'}, type: 'project', projectId: 'atmosphere', src: './Atmosphere_floor_lamp_cover.png' },
+            { id: 'p2', cat: 'product', title: {en:'The Chair of Deadwood', zh:'The Chair of Deadwood 枯木椅'}, type: 'project', projectId: 'deadwood', src: './The_chair_of_deadwood_cover.png' }, 
+            { id: 'p3', cat: 'product', title: {en:'Geometric Coffee Table', zh:'Geometric 几何咖啡桌'}, type: 'project', projectId: 'coffeetable', src: './Geometric_Coffee_Table_cover.png' },
+            { id: 'p4', cat: 'product', title: {en:'Fuzhouzhulang (Team)', zh:'福舟逐浪 (团队)'}, type: 'project', projectId: 'fuzhouzhulang', src: './Fuzhouzhulang_cover.png' },
+            
+            { id: 'd1', cat: 'digital', title: {en:'Global Water Resources Visualization', zh:'全球工业国家水资源可视化'}, type: 'web', src: './water_world.html', cover: './water_world_cover.png' },
+            { id: 'd2', cat: 'digital', title: {en:'China Water Resources Visualization', zh:'中国省份水资源可视化'}, type: 'web', src: './water_china.html', cover: './water_china_cover.png' },
+            { id: 'd3', cat: 'digital', title: {en:'AmphiPod System', zh:'AmphiPod 栖游舱系统'}, type: 'video', src: './AmphiPod.MP4' },
+
+            { id: 's1', cat: 'software', title: {en:'AutoCAD - Layout Drawing', zh:'AutoCAD 布局布置图'}, type: 'image', src: './Layout_drawing.jpg' },
+            { id: 's2', cat: 'software', title: {en:'AutoCAD - Fan Three Views', zh:'AutoCAD 风扇三视图'}, type: 'image', src: './Fan_three_views.jpg' },
+            { id: 's3', cat: 'software', title: {en:'Adobe Illustrator 01', zh:'色彩联想作业'}, type: 'image', src: './Adobe_Illustrator_01.jpg' },
+            { id: 's4', cat: 'software', title: {en:'Adobe Illustrator 02', zh:'色彩与辅助图形'}, type: 'image', src: './Adobe_Illustrator_02.jpg' },
+            { id: 's5', cat: 'software', title: {en:'Adobe Illustrator 03', zh:'生活中的色彩构成'}, type: 'image', src: './Adobe_Illustrator_03.jpg' },
+            { id: 's6', cat: 'software', title: {en:'Rhino 3D 01', zh:'Rhino 建模 01'}, type: 'image', src: './Rhino_01.jpg' },
+            { id: 's7', cat: 'software', title: {en:'Rhino 3D 02', zh:'Rhino 建模 02'}, type: 'image', src: './Rhino_02.jpg' },
+            { id: 's8', cat: 'software', title: {en:'Rhino 3D 03', zh:'Rhino 建模 03'}, type: 'image', src: './Rhino_03.jpg' },
+            { id: 's9', cat: 'software', title: {en:'Rhino 3D 04', zh:'Rhino 建模 04'}, type: 'image', src: './Rhino_04.jpg' }
+        ];
+
+        function generateBilingualBulk(cat, prefix, count, titleEn, titleZh) {
+            for(let i=1; i<=count; i++) {
+                const num = i.toString().padStart(2, '0');
+                archiveData.push({ 
+                    id: `${prefix}_${i}`, 
+                    cat: cat, 
+                    title: { en: `${titleEn} ${num}`, zh: `${titleZh} ${num}` }, 
+                    type: 'image', 
+                    src: `./${prefix}_${num}.jpg` 
+                });
+            }
+        }
+        generateBilingualBulk('sketch', 'Design_sketch', 8, 'Design Sketch', '设计素描');
+        generateBilingualBulk('sketch', 'Perspective_drawing', 14, 'Perspective Drawing', '设计透视学');
+        generateBilingualBulk('sketch', 'Engineering_drawing', 3, 'Engineering Drawing', '工程制图');
+
+        const gridContainer = document.getElementById('archive-grid-container');
+
+        function renderArchive(filter) {
+            gridContainer.innerHTML = ''; 
+            
+            const filteredData = filter === 'all' ? archiveData : archiveData.filter(item => item.cat === filter);
+            
+            filteredData.forEach(data => {
+                let icon = '+';
+                if(data.type === 'video') icon = '▶';
+                if(data.type === 'web') icon = '↗';
+                if(data.type === 'project') icon = '⤢'; 
+
+                const el = document.createElement('div');
+                el.className = 'archive-item interactive';
+                el.dataset.type = data.type;
+                el.dataset.src = data.src;
+                
+                const titleTextHtml = `<span class="en">${data.title.en}</span><span class="zh">${data.title.zh}</span>`;
+                const titleAttr = currentLang === 'en' ? data.title.en : data.title.zh;
+                
+                let mediaHtml = '';
+                if (data.type === 'image' || data.type === 'project') {
+                    mediaHtml = `<img src="${data.src}" alt="${titleAttr}" class="archive-img" loading="lazy">`;
+                } else if (data.type === 'video') {
+                    mediaHtml = `<video src="${data.src}" class="archive-img" autoplay loop muted playsinline style="pointer-events: none; width: 100%; object-fit: cover;"></video>`;
+                } else if (data.type === 'web') {
+                    if (data.cover) {
+                        mediaHtml = `<img src="${data.cover}" alt="${titleAttr}" class="archive-img" loading="lazy" style="object-fit: cover; height: 100%;">`;
+                    } else {
+                        mediaHtml = `
+                            <div class="archive-img" style="background: linear-gradient(135deg, #f0f0f0, #e6e6e6); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 240px; color: #111;">
+                                <span style="font-size: 2.5rem; font-weight: 300; margin-bottom: 12px; letter-spacing: -2px;">{ }</span>
+                                <span style="font-weight: 700; font-size: 1.05rem; padding: 0 1.5rem; text-align: center; line-height: 1.4;">${titleTextHtml}</span>
+                                <span style="font-size: 0.75rem; color: #666; margin-top: 10px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Interactive Data</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                el.innerHTML = `
+                    ${mediaHtml}
+                    <div class="archive-overlay">
+                        <div class="archive-icon">${icon}</div>
+                        <div class="archive-name">${titleTextHtml}</div>
+                        <div class="archive-cat">${data.cat}</div>
+                    </div>
+                `;
+                
+                el.addEventListener('click', () => {
+                    if (data.type === 'project') {
+                        openProjectModal(data.projectId);
+                    } else {
+                        openLightbox(data);
+                    }
+                });
+                
+                gridContainer.appendChild(el);
+            });
+
+            gsap.fromTo('.archive-item', 
+                { scale: 0.8, opacity: 0 }, 
+                { scale: 1, opacity: 1, duration: 0.5, stagger: 0.02, ease: "back.out(1.5)" }
+            );
+
+            initCursorInteraction();
+        }
+
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filter = btn.getAttribute('data-filter');
+                gsap.to('.archive-item', { 
+                    scale: 0.8, opacity: 0, duration: 0.3, 
+                    onComplete: () => renderArchive(filter) 
+                });
+            });
+        });
+
+        renderArchive('all');
+
+        // ==========================================
+        // 7. Lightbox 沉浸式灯箱逻辑 (包含荣誉标签触发)
+        // ==========================================
+        const lightbox = document.getElementById('lightbox');
+        const lbClose = document.getElementById('lightbox-close');
+        const lbContent = document.getElementById('lightbox-content');
+
+        function openLightbox(data) {
+            lenis.stop(); 
+            lbContent.innerHTML = ''; 
+            
+            const titleText = currentLang === 'en' ? data.title.en : data.title.zh;
+
+            if (data.type === 'image') {
+                lbContent.innerHTML = `<img src="${data.src}" alt="${titleText}">`;
+            } 
+            else if (data.type === 'video') {
+                lbContent.innerHTML = `<video src="${data.src}" controls autoplay loop></video>`;
+            } 
+            else if (data.type === 'web') {
+                lbContent.innerHTML = `
+                    <div class="lightbox-web-card">
+                        <h2><span class="en">${data.title.en}</span><span class="zh">${data.title.zh}</span></h2>
+                        <p class="en" style="display: ${currentLang==='en'?'block':'none'}">This is an interactive web project. Full-screen experience is recommended.</p>
+                        <p class="zh" style="display: ${currentLang==='zh'?'block':'none'}">这是一个交互式网页项目，推荐在全屏下获得最佳体验。</p>
+                        <a href="${data.src}" target="_blank" class="launch-btn interactive" style="margin:0;">
+                            <span class="en" style="display: ${currentLang==='en'?'inline':'none'}">↗ Open in New Tab</span>
+                            <span class="zh" style="display: ${currentLang==='zh'?'inline':'none'}">↗ 新标签页打开</span>
+                        </a>
+                    </div>
+                `;
+            }
+
+            lightbox.classList.add('active');
+            initCursorInteraction(); 
+        }
+        
+        // 🌟 监听时间轴上的荣誉标签点击事件，联动唤出 Lightbox
+        document.querySelectorAll('.interactive-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                const src = tag.getAttribute('data-cert');
+                const titleEn = tag.getAttribute('data-title-en');
+                const titleZh = tag.getAttribute('data-title-zh');
+                openLightbox({
+                    type: 'image',
+                    src: src,
+                    title: { en: titleEn, zh: titleZh }
+                });
+            });
+        });
+
+        lbClose.addEventListener('click', () => {
+            lightbox.classList.remove('active');
+            setTimeout(() => {
+                lbContent.innerHTML = ''; 
+                lenis.start();
+            }, 400); 
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,863 @@
+<html lang="zh-CN" vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">水资源数据可视化合集</title>
+    
+    
+    <script src="https://cdn.tailwindcss.com/3.4.17" vid="5"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet" vid="6">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" vid="7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" vid="8"></script>
+
+    <style vid="9">
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #F4F4F5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .global-nav {
+            position: fixed;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            display: flex;
+            gap: 4px;
+            background: rgba(26, 26, 26, 0.85);
+            padding: 4px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+        }
+
+        .global-nav button {
+            background: transparent;
+            color: #A0A0A0;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .global-nav button:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        
+        body:has(#page-bubble.active) .nav-bubble,
+        body:has(#page-globe.active) .nav-globe,
+        body:has(#page-radial.active) .nav-radial {
+            color: #FFFFFF;
+            background: rgba(0, 102, 255, 0.8);
+        }
+
+        
+        .page {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        
+        #page-bubble {
+            --bg: #F4F4F5;
+            --text: #111111;
+            --blue-main: #0033FF; 
+            --blue-light: #E5EDF5;
+            --black-shape: #1A1A1A;
+            --white: #FFFFFF;
+            --font-main: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            user-select: none;
+        }
+        
+        #page-bubble.active { display: flex; flex-direction: column; }
+
+        #page-bubble .frame-top {
+            position: absolute; 
+            top: 0; left: 0; width: 100%;
+            padding: 2.5vw 3vw;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 100; pointer-events: none;
+        }
+
+        #page-bubble .folio-number { font-size: 1.25rem; font-weight: 900; letter-spacing: -0.02em; }
+        #page-bubble .pseudo-logo {
+            width: 40px; height: 40px; background: var(--text); color: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; border-radius: 4px; 
+        }
+
+        #page-bubble .frame-bottom {
+            position: absolute; 
+            bottom: 0; left: 0; width: 100%;
+            padding: 2.5vw 3vw;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            z-index: 100; pointer-events: none;
+        }
+
+        #page-bubble .meta-text { font-size: 0.75rem; font-weight: 700; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.05em; color: #555; }
+
+        #page-bubble main { flex: 1; position: relative; width: 100%; height: 100%; overflow: hidden; }
+        #page-bubble .title-block { position: absolute; top: 8vw; left: 8vw; z-index: 50; max-width: 40vw; }
+        #page-bubble h1 { font-size: clamp(2.5rem, 5vw, 6rem); font-weight: 900; line-height: 1; letter-spacing: -0.04em; color: var(--text); margin-bottom: 2rem; }
+        
+        #page-bubble .legend { margin-top: 3rem; }
+        #page-bubble .legend-list { list-style: none; padding: 0; }
+        #page-bubble .legend-list li { font-size: 0.9rem; color: #444; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+        #page-bubble .legend-list li::before { content: "•"; color: var(--text); font-size: 1.2rem; }
+
+        #page-bubble .viz-container {
+            position: absolute; top: 50%; left: 55%; transform: translate(-50%, -50%);
+            width: 80vmin; height: 80vmin; isolation: isolate; 
+        }
+
+        #page-bubble .node {
+            position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            mix-blend-mode: multiply; transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+        }
+        #page-bubble .node:hover { transform: scale(1.02); }
+
+        #page-bubble .annotation {
+            position: absolute; list-style: none; padding: 0; font-size: clamp(0.7rem, 0.9vw, 1rem);
+            line-height: 1.3; color: #333; pointer-events: none; white-space: nowrap; z-index: 10;
+        }
+        #page-bubble .annotation li { display: flex; align-items: center; gap: 0.4rem; }
+        #page-bubble .annotation li::before { content: "•"; font-size: 1.2em; color: var(--text); }
+        #page-bubble .annotation li.bold { font-weight: 700; color: var(--text); }
+
+        
+        #node-br { width: 51vmin; height: 51vmin; background-color: var(--blue-main); top: 15%; left: 10%; z-index: 2; }
+        #anno-br { top: 30%; left: -38%; }
+        #node-ru { width: 38vmin; height: 38vmin; background-color: var(--black-shape); top: 40%; left: 45%; z-index: 3; }
+        #anno-ru { bottom: -10%; right: -5%; text-align: left; }
+        #node-au { width: 33vmin; height: 33vmin; background-color: var(--white); border: 1px solid #CCC; top: -5%; left: 40%; z-index: 4; mix-blend-mode: normal; }
+        #anno-au { top: -15%; right: 10%; }
+        #node-ca { width: 30vmin; height: 30vmin; background-color: var(--blue-light); top: 55%; left: 5%; z-index: 1; }
+        #anno-ca { bottom: -5%; left: -25%; }
+        #node-us { width: 21vmin; height: 21vmin; background-color: var(--blue-main); top: 35%; left: 75%; z-index: 5; }
+        #anno-us { top: 20%; left: 105%; }
+        #node-jp { width: 12vmin; height: 12vmin; background-color: var(--black-shape); top: 75%; left: 35%; z-index: 6; }
+        #anno-jp { top: 115%; left: -20%; }
+        #node-fr { width: 12vmin; height: 12vmin; background-color: var(--blue-light); top: 25%; left: 35%; z-index: 7; }
+        #anno-fr { top: 30%; left: -45%; }
+        #node-cn { width: 9vmin; height: 9vmin; background-color: var(--white); border: 1px solid var(--text); top: 80%; left: 65%; z-index: 8; mix-blend-mode: normal; }
+        #anno-cn { top: 110%; left: -30%; }
+        #node-de { width: 9vmin; height: 9vmin; background-color: var(--blue-main); top: 15%; left: 70%; z-index: 9; }
+        #anno-de { top: 20%; left: 105%; }
+        #node-in { width: 7vmin; height: 7vmin; background-color: var(--black-shape); top: 60%; left: 85%; z-index: 10; }
+        #anno-in { top: 20%; left: 105%; }
+
+        #page-bubble .internal-label { font-size: clamp(1.5rem, 3vw, 3rem); font-weight: 700; letter-spacing: -0.02em; pointer-events: none; }
+        #page-bubble .label-dark { color: var(--text); }
+        #page-bubble .label-light { color: var(--bg); }
+        #page-bubble .label-blue { color: var(--blue-main); }
+
+
+        
+        #page-radial {
+            --bg-color: #EFEFEB; 
+            --card-bg: #EAEAEA; 
+            --text-primary: #1A1A1A;
+            --text-secondary: #666666;
+            --accent-blue: #0066FF;
+            --font-family: 'Inter', -apple-system, sans-serif;
+            --mono-font: 'JetBrains Mono', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+        }
+        #page-radial.active { display: flex; }
+
+        #page-radial .mono { font-family: var(--mono-font); }
+        #page-radial .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        #page-radial .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        #page-radial .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 102, 255, 0.2); border-radius: 10px; }
+
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.2; }
+        }
+        #page-radial .pulse { animation: pulse-soft 3s infinite ease-in-out; }
+
+
+        
+        #page-globe {
+            --bg-main: #F4F4F5;
+            --bg-panel: #FFFFFF;
+            --grid-line: #E5EDF5;
+            --text-main: #1A1A1A;
+            --text-muted: #0033FF;
+            --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Inter", sans-serif;
+            --font-mono: "JetBrains Mono", monospace;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        #page-globe.active { display: flex; flex-direction: column; }
+
+        #page-globe header {
+            height: 50px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; border-bottom: 1px solid var(--grid-line); background-color: var(--bg-main); z-index: 10;
+        }
+        #page-globe .header-title { font-weight: 500; font-size: 14px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
+        #page-globe .header-meta { color: var(--text-muted); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        #page-globe main { display: grid; grid-template-columns: 280px 1fr 280px; flex: 1; overflow: hidden; }
+        #page-globe .side-panel { background-color: var(--bg-panel); border-right: 1px solid var(--grid-line); display: flex; flex-direction: column; }
+        #page-globe main > .side-panel:last-child { border-right: none; border-left: 1px solid var(--grid-line); }
+
+        #page-globe .panel-header { padding: 16px 20px; border-bottom: 1px dashed var(--text-muted); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; }
+        #page-globe .country-list { flex: 1; overflow-y: auto; padding: 12px 20px; }
+        #page-globe .country-item { padding: 12px 0; border-bottom: 1px solid var(--grid-line); display: flex; flex-direction: column; gap: 6px; }
+        #page-globe .country-info { display: flex; justify-content: space-between; align-items: baseline; }
+        #page-globe .country-name { font-weight: 500; color: var(--text-main); }
+        #page-globe .country-value { font-family: var(--font-mono); color: var(--text-muted); font-size: 11px; }
+        #page-globe .pill-track { height: 8px; border: 1px solid var(--grid-line); border-radius: 4px; position: relative; overflow: hidden; background: rgba(255, 255, 255, 0.3); }
+        #page-globe .pill-fill { height: 100%; border-radius: 3px; position: absolute; left: 0; top: 0; }
+
+        #page-globe .canvas-container {
+            position: relative; background-color: var(--bg-main);
+            background-image: repeating-linear-gradient(to bottom, transparent, transparent 39px, var(--grid-line) 39px, var(--grid-line) 40px);
+            background-position: 0 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        #globe-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; outline: none; }
+        #labels-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        #page-globe .data-label { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity 0.3s ease; }
+        #page-globe .data-label.visible { opacity: 1; }
+        #page-globe .label-line { width: 40px; height: 1px; background-color: var(--text-muted); }
+        #page-globe .label-content { background: var(--bg-panel); border: 1px solid var(--grid-line); padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(41, 50, 65, 0.1); }
+        #page-globe .label-dot { width: 6px; height: 6px; border-radius: 1px; }
+        #page-globe .label-text { font-weight: 500; font-size: 11px; color: var(--text-main); }
+        #page-globe .label-num { font-family: var(--font-mono); color: var(--text-muted); font-size: 10px; }
+
+        #page-globe .stream-list { flex: 1; overflow-y: auto; padding: 0; }
+        #page-globe .stream-item { padding: 16px 20px; border-bottom: 1px solid var(--grid-line); display: flex; gap: 12px; }
+        #page-globe .stream-icon { width: 24px; height: 24px; border: 1px solid var(--text-muted); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); }
+        #page-globe .stream-content { display: flex; flex-direction: column; gap: 4px; }
+        #page-globe .stream-date { font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); }
+        #page-globe .stream-text { color: var(--text-main); line-height: 1.4; }
+
+        #page-globe footer { height: 60px; border-top: 1px solid var(--grid-line); background-color: var(--bg-panel); display: flex; align-items: center; justify-content: center; gap: 24px; z-index: 10; }
+        #page-globe .control-group { display: flex; align-items: center; gap: 8px; }
+        #page-globe .control-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        #page-globe .pill-toggle { display: flex; border: 1px solid var(--text-muted); border-radius: 4px; overflow: hidden; background: var(--bg-main); }
+        #page-globe .toggle-btn { background: none; border: none; padding: 6px 16px; font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+        #page-globe .toggle-btn.active { background-color: var(--text-muted); color: var(--bg-main); }
+        #page-globe .toggle-btn:not(:last-child) { border-right: 1px solid var(--text-muted); }
+        
+        #page-globe ::-webkit-scrollbar { width: 4px; }
+        #page-globe ::-webkit-scrollbar-track { background: transparent; }
+        #page-globe ::-webkit-scrollbar-thumb { background: var(--grid-line); border-radius: 4px; }
+        #page-globe ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        #page-globe svg { stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+</head>
+<body vid="10">
+
+    
+    <div class="global-nav" vid="11">
+        <button class="nav-bubble" onclick="showPage('page-bubble')" vid="12">设计 1</button>
+        <button class="nav-globe" onclick="showPage('page-globe')" vid="13">设计 2</button>
+        <button class="nav-radial" onclick="showPage('page-radial')" vid="14">设计 3</button>
+    </div>
+
+    
+    <div id="page-bubble" class="page active" vid="15">
+        <div class="frame-top" vid="16">
+            <div class="folio-number" vid="17"></div>
+            <div class="pseudo-logo" vid="18">H2O</div>
+        </div>
+
+        <main vid="19">
+            <div class="title-block" vid="20">
+                <h1 vid="21">全球主要工业国家<br vid="22">人均水资源<br vid="23">占有量</h1>
+                <div class="legend" vid="24">
+                    <ul class="legend-list" vid="25">
+                        <li vid="26">面积逻辑</li>
+                        <li vid="27">圆的面积正比于人均水量（立方米/年）</li>
+                        <li vid="28">参考基准：最小圆 = 1,116 m³</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="viz-container" vid="29">
+                <div class="node" id="node-br" vid="30">
+                    <span class="internal-label label-light" vid="31">巴西</span>
+                    <ul class="annotation" id="anno-br" vid="32">
+                        <li class="bold" vid="33">巴西</li>
+                        <li vid="34">55,457 m³</li>
+                        <li vid="35">南美洲</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-ru" vid="36">
+                    <span class="internal-label label-light" vid="37">俄罗斯</span>
+                    <ul class="annotation" id="anno-ru" vid="38">
+                        <li class="bold" vid="39">俄罗斯</li>
+                        <li vid="40">30,599 m³</li>
+                        <li vid="41">欧亚大陆</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-au" vid="42">
+                    <span class="internal-label label-dark" vid="43">澳大利亚</span>
+                    <ul class="annotation" id="anno-au" vid="44">
+                        <li class="bold" vid="45">澳大利亚</li>
+                        <li vid="46">22,765 m³</li>
+                        <li vid="47">大洋洲</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-ca" vid="48">
+                    <span class="internal-label label-blue" vid="49">加拿大</span>
+                    <ul class="annotation" id="anno-ca" vid="50">
+                        <li class="bold" vid="51">加拿大</li>
+                        <li vid="52">19,691 m³</li>
+                        <li vid="53">北美洲</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-us" vid="54">
+                    <ul class="annotation" id="anno-us" vid="55">
+                        <li class="bold" vid="56">美国</li>
+                        <li vid="57">9,800 m³</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-jp" vid="58">
+                    <ul class="annotation" id="anno-jp" vid="59">
+                        <li class="bold" vid="60">日本</li>
+                        <li vid="61">3,374 m³</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-fr" vid="62">
+                    <ul class="annotation" id="anno-fr" vid="63">
+                        <li class="bold" vid="64">法国</li>
+                        <li vid="65">3,023 m³</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-cn" vid="66">
+                    <ul class="annotation" id="anno-cn" vid="67">
+                        <li class="bold" vid="68">中国</li>
+                        <li vid="69">2,018 m³</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-de" vid="70">
+                    <ul class="annotation" id="anno-de" vid="71">
+                        <li class="bold" vid="72">德国</li>
+                        <li vid="73">1,852 m³</li>
+                    </ul>
+                </div>
+                <div class="node" id="node-in" vid="74">
+                    <ul class="annotation" id="anno-in" vid="75">
+                        <li class="bold" vid="76">印度</li>
+                        <li vid="77">1,116 m³</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <div class="frame-bottom" vid="78">
+<div class="meta-text" vid="79"></div>
+            <div class="meta-text" style="text-align: right;" vid="80">
+                人均水资源分析<br vid="81">
+                体积比较图
+            </div>
+        </div>
+    </div>
+
+
+    
+    <div id="page-radial" class="page w-full h-full overflow-hidden antialiased" vid="82">
+        <div class="w-1/2 h-full flex flex-col relative border-r border-[#1A1A1A]/5 bg-[#EFEFEB]" vid="83">
+            <div class="p-8 flex justify-between items-start z-10" vid="84">
+                <div vid="85">
+                    <h1 class="mono text-[12px] text-[#1A1A1A] tracking-[0.2em] font-bold mb-1" vid="86">人均淡水资源占有量</h1>
+                    <p class="text-[11px] text-[#666666] tracking-widest" vid="87">G20 / 全球主要工业经济体</p>
+                </div>
+                <div class="flex items-center gap-2" vid="88">
+                    <div class="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse" vid="89"></div>
+                    <span class="mono text-[10px] text-[#666666] tracking-widest" vid="90">实时同步</span>
+                </div>
+            </div>
+
+            <div class="flex-grow relative flex justify-center items-center" vid="91">
+                <div class="absolute w-[500px] h-[500px] bg-[#0066FF]/5 rounded-full blur-[120px]" vid="92"></div>
+                <canvas id="viz" class="z-10 cursor-crosshair" style="touch-action: none;" vid="93"></canvas>
+                <div id="center-circle" class="absolute w-[120px] h-[120px] bg-[#EFEFEB] rounded-full border border-[#1A1A1A]/10 shadow-sm z-20 flex flex-col justify-center items-center transition-all duration-500 pointer-events-none" vid="94">
+                    <div id="center-idle" class="absolute inset-0 flex items-center justify-center transition-opacity duration-300" vid="95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-[#0066FF] opacity-30" vid="96">
+                            <circle cx="12" cy="12" r="10" vid="97"></circle>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" vid="98"></path>
+                            <path d="M2 12h20" vid="99"></path>
+                        </svg>
+                    </div>
+                    <div id="center-hover" class="absolute inset-0 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300" vid="100">
+                        <div id="center-name" class="text-[10px] font-semibold text-[#1A1A1A] tracking-widest uppercase mb-1" vid="101"></div>
+                        <div id="center-val" class="mono text-[18px] text-[#1A1A1A] font-bold" vid="102"></div>
+                        <div class="mono text-[8px] text-[#666666] mt-0.5 tracking-tighter" vid="103">立方米/年</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 mt-auto" vid="104">
+                <div class="flex items-center gap-4 w-full max-w-md mx-auto" vid="105">
+                    <span class="mono text-[9px] text-[#666666] tracking-widest" vid="106">匮乏</span>
+                    <div class="flex-grow h-1 rounded-full bg-[#E0E0E0] relative" vid="107">
+                        <div class="absolute inset-y-0 left-0 rounded-full" style="width: 100%; background: linear-gradient(to right, rgba(0,102,255,0.37), rgba(0,102,255,1))" vid="108"></div>
+                    </div>
+                    <span class="mono text-[9px] text-[#666666] tracking-widest" vid="109">充沛</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-1/2 h-full flex flex-col bg-[#EFEFEB] p-10 custom-scrollbar overflow-y-auto" vid="110">
+            <div class="mb-10" vid="111">
+                <h2 class="mono text-[10px] text-[#1A1A1A] tracking-[0.3em] uppercase mb-6" vid="112">详细数据</h2>
+                <div class="grid grid-cols-12 gap-4 pb-4 border-b border-[#1A1A1A]/10 text-[10px] mono text-[#666666] font-medium" vid="113">
+                    <div class="col-span-1" vid="114">#</div>
+                    <div class="col-span-4" vid="115">国家</div>
+                    <div class="col-span-3 text-right" vid="116">人均 (立方米)</div>
+                    <div class="col-span-4 text-right pr-4" vid="117">分布趋势</div>
+                </div>
+            </div>
+
+            <div id="country-list-radial" class="flex flex-col gap-1" vid="118"></div>
+
+            <div class="mt-auto pt-10 border-t border-[#1A1A1A]/10 flex justify-between items-center" vid="119">
+                <div class="flex flex-col" vid="120">
+                    <span class="mono text-[9px] text-[#666666] tracking-widest uppercase mb-1" vid="121">数据来源</span>
+                    <span class="text-[13px] text-[#1A1A1A]/80 font-medium" vid="122">世界银行发展指标 2022</span>
+                </div>
+                <button class="bg-white hover:bg-[#EAEAEA] border border-[#1A1A1A]/10 rounded px-4 py-2 text-[10px] mono text-[#1A1A1A] transition-colors" vid="123">
+                    导出报告 (.CSV)
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    
+    <div id="page-globe" class="page" vid="124">
+        <header vid="125">
+            <div class="header-title" vid="126">
+                <svg width="16" height="16" viewBox="0 0 24 24" vid="127"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" vid="128"></path></svg>
+                全球主要工业国家人均水资源占有率统计图
+            </div>
+            <div class="header-meta" vid="129">DATA REF: UN WATER 2023 / VOL. 14</div>
+        </header>
+
+        <main vid="130">
+            <div class="side-panel" vid="131">
+                <div class="panel-header" vid="132">
+                    <span vid="133">国家列表 / 数据集</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" vid="134"><line x1="21" y1="4" x2="14" y2="4" vid="135"></line><line x1="10" y1="4" x2="3" y2="4" vid="136"></line><line x1="21" y1="12" x2="12" y2="12" vid="137"></line><line x1="8" y1="12" x2="3" y2="12" vid="138"></line><line x1="21" y1="20" x2="16" y2="20" vid="139"></line><line x1="12" y1="20" x2="3" y2="20" vid="140"></line><line x1="14" y1="1" x2="14" y2="7" vid="141"></line><line x1="8" y1="9" x2="8" y2="15" vid="142"></line><line x1="16" y1="17" x2="16" y2="23" vid="143"></line></svg>
+                </div>
+                <div class="country-list" id="country-list-container" vid="144"></div>
+            </div>
+
+            <div class="canvas-container" id="globe-container" vid="145">
+                <canvas id="globe-canvas" vid="146"></canvas>
+                <div id="labels-container" vid="147"></div>
+            </div>
+
+            <div class="side-panel" vid="148">
+                <div class="panel-header" vid="149">
+                    <span vid="150">详细分析 / 观测纪要</span>
+                    <span vid="151">[ 04 ]</span>
+                </div>
+                <div class="stream-list" vid="152">
+                    <div class="stream-item" vid="153">
+                        <div class="stream-icon" vid="154">
+                            <svg width="12" height="12" viewBox="0 0 24 24" vid="155"><circle cx="12" cy="12" r="10" vid="156"></circle><line x1="12" y1="8" x2="12" y2="12" vid="157"></line><line x1="12" y1="16" x2="12.01" y2="16" vid="158"></line></svg>
+                        </div>
+                        <div class="stream-content" vid="159">
+                            <div class="stream-date" vid="160">2023.10.12 / 09:00 UTC</div>
+                            <div class="stream-text" vid="161">加拿大虽拥有丰富淡水储量，但人口分布与水源分布存在空间不匹配问题。</div>
+                        </div>
+                    </div>
+                    <div class="stream-item" vid="162">
+                        <div class="stream-icon" vid="163">
+                            <svg width="12" height="12" viewBox="0 0 24 24" vid="164"><path d="M22 12h-4l-3 9L9 3l-3 9H2" vid="165"></path></svg>
+                        </div>
+                        <div class="stream-content" vid="166">
+                            <div class="stream-date" vid="167">2023.10.11 / 14:30 UTC</div>
+                            <div class="stream-text" vid="168">美国西南部地区地下水抽取速度超过自然补给，水资源压力指数持续上升。</div>
+                        </div>
+                    </div>
+                    <div class="stream-item" vid="169">
+                        <div class="stream-icon" vid="170">
+                            <svg width="12" height="12" viewBox="0 0 24 24" vid="171"><circle cx="12" cy="12" r="10" vid="172"></circle><polyline points="12 6 12 12 16 14" vid="173"></polyline></svg>
+                        </div>
+                        <div class="stream-content" vid="174">
+                            <div class="stream-date" vid="175">2023.10.10 / 11:15 UTC</div>
+                            <div class="stream-text" vid="176">中国北方工业带长期面临水资源短缺，南水北调工程调蓄量需进一步评估。</div>
+                        </div>
+                    </div>
+                    <div class="stream-item" vid="177">
+                        <div class="stream-icon" style="color: var(--text-muted); border-color: var(--text-muted);" vid="178">
+                            <svg width="12" height="12" viewBox="0 0 24 24" vid="179"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" vid="180"></path><line x1="12" y1="9" x2="12" y2="13" vid="181"></line><line x1="12" y1="17" x2="12.01" y2="17" vid="182"></line></svg>
+                        </div>
+                        <div class="stream-content" vid="183">
+                            <div class="stream-date" vid="184">2023.10.09 / 08:45 UTC</div>
+                            <div class="stream-text" vid="185">德国莱茵河流域夏季枯水期提前，对内河航运及工业冷却用水构成挑战。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        
+    </div>
+
+
+    
+
+    
+    <script vid="186">
+    {
+        const countries = [
+            { id: '加拿大', name: '加拿大', val: 80000, trend: [78, 82, 80, 81, 80] },
+            { id: '俄罗斯', name: '俄罗斯', val: 30000, trend: [32, 31, 30, 30, 30] },
+            { id: '巴西', name: '巴西', val: 28000, trend: [30, 29, 28, 28, 28] },
+            { id: '澳大利亚', name: '澳大利亚', val: 20000, trend: [22, 21, 20, 19, 20] },
+            { id: '美国', name: '美国', val: 8800, trend: [9.2, 9.0, 8.8, 8.8, 8.8] },
+            { id: '日本', name: '日本', val: 3300, trend: [3.5, 3.4, 3.3, 3.3, 3.3] },
+            { id: '法国', name: '法国', val: 3100, trend: [3.2, 3.2, 3.1, 3.1, 3.1] },
+            { id: '中国', name: '中国', val: 2000, trend: [2.1, 2.1, 2.0, 2.0, 2.0] },
+            { id: '德国', name: '德国', val: 1800, trend: [1.9, 1.8, 1.8, 1.8, 1.8] },
+            { id: '韩国', name: '韩国', val: 1400, trend: [1.5, 1.4, 1.4, 1.4, 1.4] },
+            { id: '印度', name: '印度', val: 1200, trend: [1.3, 1.3, 1.2, 1.2, 1.2] },
+            { id: '沙特', name: '沙特阿拉伯', val: 70, trend: [0.08, 0.08, 0.07, 0.07, 0.07] }
+        ];
+
+        const listContainer = document.getElementById('country-list-radial');
+        const POWER = 0.4;
+        const MIN_VAL = Math.pow(70, POWER);
+        const MAX_VAL = Math.pow(80000, POWER);
+
+        function getNormalized(val) {
+            const v = Math.pow(val, POWER);
+            return Math.max(0, Math.min(1, (v - MIN_VAL) / (MAX_VAL - MIN_VAL)));
+        }
+
+        function getColor(norm) {
+            return `rgba(0, 102, 255, ${0.3 + norm * 0.7})`;
+        }
+
+        countries.forEach((c, i) => {
+            const norm = getNormalized(c.val);
+            const color = getColor(norm);
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 gap-4 py-4 px-2 items-center hover:bg-white transition-colors rounded-lg group cursor-default';
+            row.innerHTML = `
+                <div class="col-span-1 mono text-[11px] text-[#666666] opacity-40 group-hover:opacity-100">${(i+1).toString().padStart(2, '0')}</div>
+                <div class="col-span-4 flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full" style="background-color: ${color}"></div>
+                    <span class="text-[13px] font-medium text-[#1A1A1A]/80 group-hover:text-[#1A1A1A]">${c.name}</span>
+                    <span class="mono text-[9px] text-[#666666] opacity-40 ml-1">${c.id}</span>
+                </div>
+                <div class="col-span-3 text-right mono text-[12px] text-[#1A1A1A]/90 group-hover:text-[#1A1A1A] font-medium">${c.val.toLocaleString()}</div>
+                <div class="col-span-4 flex justify-end items-center gap-2 pr-2">
+                    <svg width="60" height="20" class="opacity-40 group-hover:opacity-100 transition-opacity">
+                        <polyline points="${c.trend.map((v, idx) => `${idx*15},${20 - (v/Math.max(...c.trend)*15)}`).join(' ')}" fill="none" stroke="${color}" stroke-width="1.5" />
+                    </svg>
+                    <div class="w-24 h-1 bg-[#E0E0E0] rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-1000" style="width: ${norm * 100}%; background-color: ${color}"></div>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(row);
+        });
+
+        const canvas = document.getElementById('viz');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const size = 520;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        canvas.style.width = size + 'px';
+        canvas.style.height = size + 'px';
+        canvas.style.marginLeft = '-20px';
+        ctx.scale(dpr, dpr);
+
+        const cx = size / 2, cy = size / 2;
+        const innerRadius = 90;
+        let hoverIndex = null;
+        let time = 0;
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left, y = e.clientY - rect.top;
+            const dx = x - cx, dy = y - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > innerRadius - 20 && dist < innerRadius + 150) {
+                let angle = Math.atan2(dy, dx);
+                const segmentAngle = (Math.PI * 2) / countries.length;
+                let normalizedAngle = angle - (-Math.PI/2 - segmentAngle/2);
+                if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
+                hoverIndex = Math.floor(normalizedAngle / segmentAngle) % countries.length;
+            } else { hoverIndex = null; }
+            updateCenterUI();
+        });
+
+        function updateCenterUI() {
+            const idle = document.getElementById('center-idle');
+            const hover = document.getElementById('center-hover');
+            const circle = document.getElementById('center-circle');
+            if (hoverIndex !== null) {
+                const c = countries[hoverIndex];
+                document.getElementById('center-name').innerText = c.name;
+                document.getElementById('center-val').innerText = c.val.toLocaleString();
+                idle.style.opacity = '0';
+                hover.style.opacity = '1';
+                const color = getColor(getNormalized(c.val));
+                circle.style.borderColor = color;
+                circle.style.boxShadow = `0 4px 20px rgba(0,0,0,0.05)`;
+            } else {
+                idle.style.opacity = '1';
+                hover.style.opacity = '0';
+                circle.style.borderColor = 'rgba(26,26,26,0.1)';
+                circle.style.boxShadow = 'none';
+            }
+        }
+
+        function animate() {
+            time = Date.now() / 1000;
+            ctx.clearRect(0, 0, size, size);
+            const totalTicks = 240;
+            const segmentAngle = (Math.PI * 2) / countries.length;
+
+            for (let i = 0; i < totalTicks; i++) {
+                const angle = (i / totalTicks) * Math.PI * 2 - Math.PI / 2;
+                let ratio = (i / totalTicks);
+                let shiftedR = ratio + (0.5 / countries.length);
+                const floatIndex = (shiftedR * countries.length) % countries.length;
+                const index0 = Math.floor(floatIndex);
+                const index1 = (index0 + 1) % countries.length;
+                const t = floatIndex - index0;
+                
+                const easeT = (1 - Math.cos(t * Math.PI)) / 2;
+                const len0 = 6 + getNormalized(countries[index0].val) * 100;
+                const len1 = 6 + getNormalized(countries[index1].val) * 100;
+                const length = len0 + (len1 - len0) * easeT;
+                
+                const norm = getNormalized(countries[index0].val) * (1-t) + getNormalized(countries[index1].val) * t;
+                const baseColor = getColor(norm);
+
+                const tickCountryIndex = Math.floor(((i / totalTicks) * countries.length + 0.5) % countries.length);
+                const isHovered = hoverIndex === tickCountryIndex;
+
+                ctx.strokeStyle = isHovered ? '#0066FF' : baseColor;
+                ctx.globalAlpha = isHovered ? 1 : (hoverIndex !== null ? 0.1 : 0.8);
+                ctx.lineWidth = isHovered ? 2 : 1;
+                
+                const finalLen = length + Math.sin(time * 2 + i * 0.1) * 2;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(angle) * innerRadius, cy + Math.sin(angle) * innerRadius);
+                ctx.lineTo(cx + Math.cos(angle) * (innerRadius + finalLen), cy + Math.sin(angle) * (innerRadius + finalLen));
+                ctx.stroke();
+            }
+
+            ctx.font = '500 10px "JetBrains Mono"';
+            ctx.textAlign = 'center';
+            countries.forEach((c, idx) => {
+                const angle = idx * segmentAngle - Math.PI / 2;
+                const tr = innerRadius + 135;
+                ctx.fillStyle = hoverIndex === idx ? '#1A1A1A' : '#666666';
+                ctx.globalAlpha = hoverIndex === null || hoverIndex === idx ? 1 : 0.2;
+                ctx.fillText(c.id, cx + Math.cos(angle) * tr, cy + Math.sin(angle) * tr);
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+    </script>
+
+    
+    <script vid="187">
+    {
+        const colors = { high: '#0033FF', med: '#0033FF', low: '#0033FF' };
+
+        const waterData = [
+            { id: 'CA', name: '加拿大 (Canada)', value: 76500, lat: 56.13, lon: -106.34, level: 'high' },
+            { id: 'RU', name: '俄罗斯 (Russia)', value: 29900, lat: 61.52, lon: 105.31, level: 'high' },
+            { id: 'US', name: '美国 (USA)', value: 8800, lat: 37.09, lon: -95.71, level: 'med' },
+            { id: 'FR', name: '法国 (France)', value: 3100, lat: 46.22, lon: 2.21, level: 'med' },
+            { id: 'JP', name: '日本 (Japan)', value: 3400, lat: 36.20, lon: 138.25, level: 'med' },
+            { id: 'DE', name: '德国 (Germany)', value: 1300, lat: 51.16, lon: 10.45, level: 'low' },
+            { id: 'UK', name: '英国 (UK)', value: 2200, lat: 55.37, lon: -3.43, level: 'low' },
+            { id: 'CN', name: '中国 (China)', value: 2000, lat: 35.86, lon: 104.19, level: 'low' }
+        ];
+
+        const maxValue = 80000; 
+
+        const listContainer = document.getElementById('country-list-container');
+        waterData.sort((a, b) => b.value - a.value).forEach(item => {
+            const percentage = (item.value / maxValue) * 100;
+            const color = colors[item.level];
+            
+            const html = `
+                <div class="country-item">
+                    <div class="country-info">
+                        <span class="country-name">${item.name}</span>
+                        <span class="country-value">${item.value.toLocaleString()} m³</span>
+                    </div>
+                    <div class="pill-track">
+                        <div class="pill-fill" style="width: ${percentage}%; background-color: ${color}; opacity: 0.8;"></div>
+                    </div>
+                </div>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', html);
+        });
+
+        const canvas = document.getElementById('globe-canvas');
+        const container = document.getElementById('globe-container');
+        const labelsContainer = document.getElementById('labels-container');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        
+        
+        let width = container.clientWidth || window.innerWidth / 2;
+        let height = container.clientHeight || window.innerHeight;
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(40, width / height, 1, 1000);
+        camera.position.set(0, 0, 180);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enablePan = false;
+        controls.minDistance = 100;
+        controls.maxDistance = 300;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        const globeRadius = 50;
+        const sphereGeo = new THREE.SphereGeometry(globeRadius, 64, 64);
+        
+        const pointsMat = new THREE.PointsMaterial({ color: 0x0033FF, size: 0.5, transparent: true, opacity: 0.3 });
+        const globePoints = new THREE.Points(sphereGeo, pointsMat);
+        scene.add(globePoints);
+
+        const wireMat = new THREE.LineBasicMaterial({ color: 0xE5EDF5, transparent: true, opacity: 0.6 });
+        const wireGlobe = new THREE.LineSegments(new THREE.WireframeGeometry(sphereGeo), wireMat);
+        scene.add(wireGlobe);
+
+        function getPosition(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            const x = -(radius * Math.sin(phi) * Math.cos(theta));
+            const z = (radius * Math.sin(phi) * Math.sin(theta));
+            const y = (radius * Math.cos(phi));
+            return new THREE.Vector3(x, y, z);
+        }
+
+        const dataMeshes = [];
+        const labelElements = [];
+
+        waterData.forEach((data) => {
+            const pos = getPosition(data.lat, data.lon, globeRadius);
+            const pointRadius = 1.5 + (data.value / maxValue) * 2; 
+            const pointGeo = new THREE.SphereGeometry(pointRadius, 16, 16);
+            const pointMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(colors[data.level]) });
+            const pointMesh = new THREE.Mesh(pointGeo, pointMat);
+            pointMesh.position.copy(pos);
+            scene.add(pointMesh);
+
+            const normal = pos.clone().normalize();
+            const lineEndPos = pos.clone().add(normal.multiplyScalar(15 + Math.random() * 10)); 
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([pos, lineEndPos]);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x1A1A1A, transparent: true, opacity: 0.4 });
+            const line = new THREE.Line(lineGeo, lineMat);
+            scene.add(line);
+
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'data-label';
+            labelDiv.innerHTML = `
+                <div class="label-line"></div>
+                <div class="label-content">
+                    <div class="label-dot" style="background-color: ${colors[data.level]}"></div>
+                    <span class="label-text">${data.name.split(' ')[0]}</span>
+                    <span class="label-num">${data.value}</span>
+                </div>
+            `;
+            labelsContainer.appendChild(labelDiv);
+            dataMeshes.push({ mesh: pointMesh, lineEnd: lineEndPos });
+            labelElements.push(labelDiv);
+        });
+
+        
+        const resizeObserver = new ResizeObserver(() => {
+            if (container.clientWidth > 0) {
+                width = container.clientWidth;
+                height = container.clientHeight;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            }
+        });
+        resizeObserver.observe(container);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            dataMeshes.forEach((item, i) => {
+                const vector = item.lineEnd.clone();
+                vector.project(camera);
+                const x = (vector.x * .5 + .5) * width;
+                const y = (vector.y * -.5 + .5) * height;
+                const label = labelElements[i];
+                
+                if (vector.z > 1) {
+                    label.classList.remove('visible');
+                } else {
+                    label.classList.add('visible');
+                    label.style.transform = `translate(${x}px, ${y}px)`;
+                    if (vector.x > 0) { label.style.flexDirection = 'row-reverse'; } 
+                    else { label.style.flexDirection = 'row'; }
+                }
+            });
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        document.querySelectorAll('.pill-toggle').forEach(toggle => {
+            const btns = toggle.querySelectorAll('.toggle-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        });
+    }
+    </script>
+
+    
+    <script vid="188">
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+    </script>
+
+</body></html>
