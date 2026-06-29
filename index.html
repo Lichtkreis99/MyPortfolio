@@ -57,9 +57,26 @@
         .lang-switch span.active { color: var(--text-color); }
         .lang-separator { opacity: 0.3; font-weight: 400; }
 
-        /* 🎵 音乐切换按钮样式 */
-        .music-switch { position: fixed; bottom: 40px; right: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 1001; display: flex; align-items: center; gap: 4px; }
+        /* 🎵 音乐切换按钮样式 (含极简动态音波) */
+        .music-switch { position: fixed; bottom: 40px; right: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 1001; display: flex; align-items: center; gap: 8px; }
         .music-switch:hover, .music-switch.playing { color: var(--text-color); }
+        
+        .equalizer { display: flex; align-items: flex-end; gap: 2px; height: 14px; margin-bottom: 2px;}
+        .eq-bar { width: 2px; height: 3px; background-color: var(--text-muted); border-radius: 1px; transition: background-color 0.3s ease, height 0.3s ease; }
+        
+        .music-switch:hover .eq-bar { background-color: var(--text-color); }
+        .music-switch.playing .eq-bar { background-color: var(--text-color); animation: eq-bounce 0.8s infinite ease-in-out alternate; }
+        
+        /* 错开每根音波的动画时间，产生律动感 */
+        .music-switch.playing .eq-bar:nth-child(1) { animation-delay: 0s; }
+        .music-switch.playing .eq-bar:nth-child(2) { animation-delay: 0.3s; }
+        .music-switch.playing .eq-bar:nth-child(3) { animation-delay: 0.1s; }
+        .music-switch.playing .eq-bar:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes eq-bounce {
+            0% { height: 3px; }
+            100% { height: 14px; }
+        }
 
         /* === 4. 右侧主内容区 (首屏入场动画包装器) === */
         .main-content { margin-left: 20%; width: 80%; display: flex; flex-direction: column; }
@@ -296,6 +313,12 @@
     </audio>
 
     <div class="music-switch interactive" id="music-toggle">
+        <div class="equalizer">
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+            <div class="eq-bar"></div>
+        </div>
         <span class="en">Sound: OFF</span>
         <span class="zh">音乐: 关</span>
     </div>
@@ -311,8 +334,8 @@
                 </p>
             </div>
             <div class="hero-reveal">
-                <a href="./Resume_en.pdf" download="Resume_en.pdf" target="_blank" class="resume-btn interactive en">Download Resume</a>
-                <a href="./Resume_zh.pdf" download="Resume_zh.pdf" target="_blank" class="resume-btn interactive zh">下载简历</a>
+                <a href="./Resume/Resume_en.pdf" download="Resume_en.pdf" target="_blank" class="resume-btn interactive en">Download Resume</a>
+                <a href="./Resume/Resume_zh.pdf" download="Resume_zh.pdf" target="_blank" class="resume-btn interactive zh">下载简历</a>
             </div>
         </section>
         
@@ -337,10 +360,10 @@
                         </div>
                         
                         <div class="timeline-tags">
-                            <span class="tag interactive interactive-tag" data-cert="./FZU_2022_ranking&points.jpg" data-title-en="GPA Rank 1" data-title-zh="专业绩点排名第一"><span class="en">🥇 GPA Rank 1</span><span class="zh">🥇 专业排名第一</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./2023_goethe_zertifikat.jpg" data-title-en="Goethe B1 Certificate" data-title-zh="歌德 B1 证书"><span class="en">📜 Goethe Deutsch B1</span><span class="zh">📜 德语歌德 B1 证书</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Other/FZU_2022_ranking&points.jpg" data-title-en="GPA Rank 1" data-title-zh="专业绩点排名第一"><span class="en">🥇 GPA Rank 1</span><span class="zh">🥇 专业排名第一</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Language/2023_goethe_zertifikat.jpg" data-title-en="Goethe B1 Certificate" data-title-zh="歌德 B1 证书"><span class="en">📜 Goethe Deutsch B1</span><span class="zh">📜 德语歌德 B1 证书</span></span>
                             
-                            <span class="tag interactive interactive-tag" data-cert="./FZU_sports.jpg" data-title-en="Sprint Gold Medal" data-title-zh="短跑金牌"><span class="en">🥇🥈 Relay Gold & Sprint Silver</span><span class="zh">🥇🥈 4x100m金牌&100m银牌</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Other/FZU_sports.jpg" data-title-en="Sprint Gold Medal" data-title-zh="短跑金牌"><span class="en">🥇🥈 Relay Gold & Sprint Silver</span><span class="zh">🥇🥈 4x100m金牌&100m银牌</span></span>
                         </div>
                     </div>
                     <div class="timeline-images"><img src="./About/Cover/FZU_2022.png" alt="FZU 2022" class="timeline-real-img"></div>
@@ -363,13 +386,13 @@
                         </div>
                         
                         <div class="timeline-tags">
-                            <span class="tag interactive interactive-tag" data-cert="./2023_Uni_Leipzig_Zulassung.jpg" data-title-en="Leipzig Univ. Admission" data-title-zh="莱比锡大学语言班录取"><span class="en">🎓 Uni Leipzig Admission</span><span class="zh">🎓 莱比锡大学录取</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./interDaF.jpg" data-title-en="interDaF C1 Certificate" data-title-zh="interDaF C1 德语证书"><span class="en">📜 Language Course Certificate</span><span class="zh">📜 语言班证书</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./2024_telc_Zertifikat.jpg" data-title-en="telc C1 Certificate" data-title-zh="telc C1 德语证书"><span class="en">📜 telc Deutsch C1</span><span class="zh">📜 德语 telc C1 证书</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./Qingming.jpg" data-title-en="Artistic Exploration (Illustration)" data-title-zh="艺术探索 (清明上河图白描)"><span class="en">🖌️ Artistic Exploration</span><span class="zh">🖌️ 艺术探索</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Offer/2023_Uni_Leipzig_Zulassung.jpg" data-title-en="Leipzig Univ. Admission" data-title-zh="莱比锡大学语言班录取"><span class="en">🎓 Uni Leipzig Admission</span><span class="zh">🎓 莱比锡大学录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Language/interDaF.jpg" data-title-en="interDaF C1 Certificate" data-title-zh="interDaF C1 德语证书"><span class="en">📜 Language Course Certificate</span><span class="zh">📜 语言班证书</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Language/2024_telc_Zertifikat.jpg" data-title-en="telc C1 Certificate" data-title-zh="telc C1 德语证书"><span class="en">📜 telc Deutsch C1</span><span class="zh">📜 德语 telc C1 证书</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Other/Qingming.jpg" data-title-en="Artistic Exploration (Illustration)" data-title-zh="艺术探索 (清明上河图白描)"><span class="en">🖌️ Artistic Exploration</span><span class="zh">🖌️ 艺术探索</span></span>
                         </div>
                     </div>
-                    <div class="timeline-images"><img src="./Uni_Leipzig_2023.png" alt="Leipzig Univ" class="timeline-real-img"></div>
+                    <div class="timeline-images"><img src="./About/Cover/Uni_Leipzig_2023.png" alt="Leipzig Univ" class="timeline-real-img"></div>
                 </div>
                 
                 <div class="timeline-item interactive">
@@ -389,13 +412,13 @@
                         </div>
                         
                         <div class="timeline-tags">
-                            <span class="tag interactive interactive-tag" data-cert="./2024_LMU_Zulassung.jpg" data-title-en="LMU Munich Admission" data-title-zh="慕尼黑大学物理系录取"><span class="en">🎓 LMU Offer</span><span class="zh">🎓 LMU 录取</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./2024_TUM_Zulassung.jpg" data-title-en="TUM Admission" data-title-zh="慕尼黑工业大学物理系录取"><span class="en">🎓 TUM Offer</span><span class="zh">🎓 TUM 录取</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./2024_KIT_Zulassung.jpg" data-title-en="KIT Admission" data-title-zh="卡尔斯鲁厄理工物理系录取"><span class="en">🎓 KIT Offer</span><span class="zh">🎓 KIT 录取</span></span>
-                            <span class="tag interactive interactive-tag" data-cert="./2024_RWTH_Zulassung.jpg" data-title-en="RWTH Aachen Admission" data-title-zh="亚琛工业大学物理系录取"><span class="en">🎓 RWTH Offer</span><span class="zh">🎓 RWTH 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Offer/2024_LMU_Zulassung.jpg" data-title-en="LMU Munich Admission" data-title-zh="慕尼黑大学物理系录取"><span class="en">🎓 LMU Offer</span><span class="zh">🎓 LMU 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Offer/2024_TUM_Zulassung.jpg" data-title-en="TUM Admission" data-title-zh="慕尼黑工业大学物理系录取"><span class="en">🎓 TUM Offer</span><span class="zh">🎓 TUM 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Offer/2024_KIT_Zulassung.jpg" data-title-en="KIT Admission" data-title-zh="卡尔斯鲁厄理工物理系录取"><span class="en">🎓 KIT Offer</span><span class="zh">🎓 KIT 录取</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Offer/2024_RWTH_Zulassung.jpg" data-title-en="RWTH Aachen Admission" data-title-zh="亚琛工业大学物理系录取"><span class="en">🎓 RWTH Offer</span><span class="zh">🎓 RWTH 录取</span></span>
                         </div>
                     </div>
-                    <div class="timeline-images"><img src="./LMU_2024.png" alt="LMU Munich" class="timeline-real-img"></div>
+                    <div class="timeline-images"><img src="./About/Cover/LMU_2024.png" alt="LMU Munich" class="timeline-real-img"></div>
                 </div>
                 
                 <div class="timeline-item interactive">
@@ -415,10 +438,10 @@
                         </div>
                         
                         <div class="timeline-tags">
-                            <span class="tag interactive interactive-tag" data-cert="./FZU_sports.jpg" data-title-en="Basketball Gold Medal" data-title-zh="篮球联赛金牌"><span class="en">🥇🥈 Hoops Champion & Relay Silver</span><span class="zh">🥇🥈 篮球赛金牌&4x100m银牌</span></span>
+                            <span class="tag interactive interactive-tag" data-cert="./About/Other/FZU_sports.jpg" data-title-en="Basketball Gold Medal" data-title-zh="篮球联赛金牌"><span class="en">🥇🥈 Hoops Champion & Relay Silver</span><span class="zh">🥇🥈 篮球赛金牌&4x100m银牌</span></span>
                         </div>
                     </div>
-                    <div class="timeline-images"><img src="./FZU_2025.png" alt="FZU 2025" class="timeline-real-img"></div>
+                    <div class="timeline-images"><img src="./About/Cover/FZU_2025.png" alt="FZU 2025" class="timeline-real-img"></div>
                 </div>
                 
             </div>
@@ -430,19 +453,19 @@
             </div>
             
             <div class="work-item interactive" data-project="changan">
-                <div class="work-bg-wrapper"><img src="./Chang'an_Illustrated_Chronicl_cover.png" alt="CHANG'AN" class="work-bg-img"></div>
+                <div class="work-bg-wrapper"><img src="./Works/Projects/Digital/Chang_an/Chang_an_cover.png" alt="CHANG'AN" class="work-bg-img"></div>
                 <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">Web / Visual Data</span><span class="zh">网页 / 数据可视化</span></span><span class="work-role"><span class="en">Solo Project</span><span class="zh">个人项目</span></span></div></div>
             </div>
             <div class="work-item interactive" data-project="aetherleaf">
-                <div class="work-bg-wrapper"><img src="./Aetherleaf_cover.png" alt="AetherLeaf" class="work-bg-img"></div>
+                <div class="work-bg-wrapper"><img src="./Works/Projects/Digital/AetherLeaf/Aetherleaf_cover.png" alt="AetherLeaf" class="work-bg-img"></div>
                 <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">Web Interactive</span><span class="zh">交互网页</span></span><span class="work-role"><span class="en">Solo Project</span><span class="zh">个人项目</span></span></div></div>
             </div>
             <div class="work-item interactive" data-project="deeptalk">
-                <div class="work-bg-wrapper"><img src="./Deeptalk_cover.png" alt="Deeptalk" class="work-bg-img"></div>
+                <div class="work-bg-wrapper"><img src="./Works/Projects/UI_Design/Deeptalk_cover.png" alt="Deeptalk" class="work-bg-img"></div>
                 <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">UI / UX Design</span><span class="zh">UI/UX 设计</span></span><span class="work-role"><span class="en">Team Project</span><span class="zh">团队项目</span></span></div></div>
             </div>
             <div class="work-item interactive" data-project="magiccube">
-                <div class="work-bg-wrapper"><img src="./Magic_cube_cover.png" alt="Magic Cube" class="work-bg-img"></div>
+                <div class="work-bg-wrapper"><img src="./Works/Projects/Product_Design/Magic_cube_cover.png" alt="Magic Cube" class="work-bg-img"></div>
                 <div class="work-meta-floating reveal-wrap"><div class="reveal-inner"><span class="work-tag"><span class="en">Industrial Design</span><span class="zh">工业设计</span></span><span class="work-role"><span class="en">Solo Project</span><span class="zh">个人项目</span></span></div></div>
             </div>
         </section>
@@ -529,33 +552,47 @@
             }
         }
 
-        // === 🎵 音乐控制逻辑 ===
+        // === 🎵 音乐控制与视频联动逻辑 ===
         const bgMusic = document.getElementById('bg-music');
         const musicToggle = document.getElementById('music-toggle');
         let isMusicPlaying = false;
+        let wasMusicPlayingBeforeVideo = false; // 用于记录视频播放前的背景音乐状态
 
-        // 设置适宜的背景音量（建议20%，以免声音过大）
         bgMusic.volume = 0.2;
 
-        musicToggle.addEventListener('click', () => {
-            if (isMusicPlaying) {
-                // 暂停音乐
-                bgMusic.pause();
-                isMusicPlaying = false;
+        // 统一更新UI状态的函数
+        function updateMusicUI(playing) {
+            if (playing) {
+                musicToggle.classList.add('playing');
+                musicToggle.querySelector('.en').innerText = 'Sound: ON';
+                musicToggle.querySelector('.zh').innerText = '音乐: 开';
+            } else {
                 musicToggle.classList.remove('playing');
                 musicToggle.querySelector('.en').innerText = 'Sound: OFF';
                 musicToggle.querySelector('.zh').innerText = '音乐: 关';
+            }
+        }
+
+        // 统一切换音乐的函数
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+                updateMusicUI(false);
             } else {
-                // 播放音乐
                 bgMusic.play().then(() => {
                     isMusicPlaying = true;
-                    musicToggle.classList.add('playing');
-                    musicToggle.querySelector('.en').innerText = 'Sound: ON';
-                    musicToggle.querySelector('.zh').innerText = '音乐: 开';
+                    updateMusicUI(true);
                 }).catch(error => {
                     console.log("音频播放失败 (浏览器可能拦截了自动播放):", error);
                 });
             }
+        }
+
+        musicToggle.addEventListener('click', () => {
+            // 如果用户手动点击音乐开关，需要重置“视频前状态”记录，防止逻辑冲突
+            wasMusicPlayingBeforeVideo = !isMusicPlaying;
+            toggleMusic();
         });
 
         // --- 1. GSAP & Lenis 初始化 ---
@@ -652,7 +689,6 @@
             wrapper.addEventListener('click', (e) => { e.preventDefault(); lenis.scrollTo(wrapper.querySelector('a').getAttribute('href')); });
         });
 
-        // 🌟 解决作品导航未高亮：按具体 ID 绑定能够精确关联至非 section-base 的作品区块
         const sections = [
             document.getElementById('home'),
             document.getElementById('about'),
@@ -695,79 +731,79 @@
                 title: { en: "AETHERLEAF", zh: "AETHERLEAF 幻叶" }, 
                 role: { en: "Solo Project | Product Design & Creative Dev", zh: "个人项目 | 产品设计与创意开发" }, 
                 body: { 
-                    en: `<img src="./AetherLeaf.png" alt="AetherLeaf Detail">
-                         <div class="launch-btn-container"><a href="./AetherLeaf.html" target="_blank" class="launch-btn interactive">↗ Launch Web Experience</a></div>`,
-                    zh: `<img src="./AetherLeaf.png" alt="AetherLeaf Detail">
-                         <div class="launch-btn-container"><a href="./AetherLeaf.html" target="_blank" class="launch-btn interactive">↗ 体验完整网页</a></div>`
+                    en: `<img src="./Works/Projects/Digital/AetherLeaf/AetherLeaf.png" alt="AetherLeaf Detail">
+                         <div class="launch-btn-container"><a href="./Works/Projects/Digital/AetherLeaf/AetherLeaf.html" target="_blank" class="launch-btn interactive">↗ Launch Web Experience</a></div>`,
+                    zh: `<img src="./Works/Projects/Digital/AetherLeaf/AetherLeaf.png" alt="AetherLeaf Detail">
+                         <div class="launch-btn-container"><a href="./Works/Projects/Digital/AetherLeaf/AetherLeaf.html" target="_blank" class="launch-btn interactive">↗ 体验完整网页</a></div>`
                 }
             },
             'changan': { 
                 title: { en: "CHANG'AN ILLUSTRATED CHRONICLE", zh: "CHANG'AN 长安图志" }, 
                 role: { en: "Solo Project | Full-stack & Visual Dev", zh: "个人项目 | 全栈与视觉开发" }, 
                 body: {
-                    en: `<img src="./Chang'an_Illustrated_Chronicl.png" alt="Chang'an Detail">
-                         <div class="launch-btn-container"><a href="./Chang'an_Illustrated_Chronicl.html" target="_blank" class="launch-btn interactive">↗ Enter Digital Sandbox</a></div>`,
-                    zh: `<img src="./Chang'an_Illustrated_Chronicl.png" alt="Chang'an Detail">
-                         <div class="launch-btn-container"><a href="./Chang'an_Illustrated_Chronicl.html" target="_blank" class="launch-btn interactive">↗ 进入大唐数字沙盘</a></div>`
+                    en: `<img src="./Works/Projects/Digital/Chang_an/Chang_an.png" alt="Chang'an Detail">
+                         <div class="launch-btn-container"><a href="./Works/Projects/Digital/Chang_an/Chang_an.html" target="_blank" class="launch-btn interactive">↗ Enter Digital Sandbox</a></div>`,
+                    zh: `<img src="./Works/Projects/Digital/Chang_an/Chang_an.png" alt="Chang'an Detail">
+                         <div class="launch-btn-container"><a href="./Works/Projects/Digital/Chang_an/Chang_an.html" target="_blank" class="launch-btn interactive">↗ 进入長安圖志</a></div>`
                 }
             },
             'deeptalk': { 
                 title: { en: "DEEPTALK", zh: "DEEPTALK 深蓝对话" }, 
                 role: { en: "Team Project | Pre-research, Info Integration & Core UI Design", zh: "团队项目 | 前期调研、信息整合与部分UI设计" }, 
                 body: {
-                    en: `<img src="./Deeptalk_part01.png" alt="Research and Analysis" style="margin-bottom: 3rem;">
-                         <img src="./Deeptalk_part02.png" alt="Concept and Design" style="margin-bottom: 3rem;">
+                    en: `<img src="./Works/Projects/UI_Design/Deeptalk_part01.png" alt="Research and Analysis" style="margin-bottom: 3rem;">
+                         <img src="./Works/Projects/UI_Design/Deeptalk_part02.png" alt="Concept and Design" style="margin-bottom: 3rem;">
                          <div style="text-align: center; margin: 6rem 0 3rem 0;">
                              <h3 style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;">— CORE UI DESIGN EXECUTION —</h3>
                              <p style="color: #888; font-size: 0.95rem; margin-top: 0.5rem; font-weight: 500;">Independent Contribution</p>
                          </div>
                          <div style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
-                             <img src="./Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 01">
-                             <img src="./Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 02">
-                             <img src="./Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 03">
+                             <img src="./Works/Projects/UI_Design/Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 01">
+                             <img src="./Works/Projects/UI_Design/Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 02">
+                             <img src="./Works/Projects/UI_Design/Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 03">
                          </div>
-                         <img src="./Deeptalk_part03.png" alt="Final Presentation" style="margin-bottom: 3rem;">`,
-                    zh: `<img src="./Deeptalk_part01.png" alt="研究与分析" style="margin-bottom: 3rem;">
-                         <img src="./Deeptalk_part02.png" alt="概念与设计" style="margin-bottom: 3rem;">
+                         <img src="./Works/Projects/UI_Design/Deeptalk_part03.png" alt="Final Presentation" style="margin-bottom: 3rem;">`,
+                    zh: `<img src="./Works/Projects/UI_Design/Deeptalk_part01.png" alt="研究与分析" style="margin-bottom: 3rem;">
+                         <img src="./Works/Projects/UI_Design/Deeptalk_part02.png" alt="概念与设计" style="margin-bottom: 3rem;">
                          <div style="text-align: center; margin: 6rem 0 3rem 0;">
                              <h3 style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;">— 部分 UI 界面呈现 —</h3>
                              <p style="color: #888; font-size: 0.95rem; margin-top: 0.5rem; font-weight: 500;">个人独立产出部分</p>
                          </div>
                          <div style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
-                             <img src="./Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 01">
-                             <img src="./Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 02">
-                             <img src="./Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 03">
+                             <img src="./Works/Projects/UI_Design/Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 01">
+                             <img src="./Works/Projects/UI_Design/Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 02">
+                             <img src="./Works/Projects/UI_Design/Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 03">
                          </div>
-                         <img src="./Deeptalk_part03.png" alt="方案呈现" style="margin-bottom: 3rem;">`
+                         <img src="./Works/Projects/UI_Design/Deeptalk_part03.png" alt="方案呈现" style="margin-bottom: 3rem;">`
                 }
             },
             'magiccube': { 
                 title: { en: "MAGIC CUBE ELECTRIC CLOCK", zh: "MAGIC CUBE 电子钟" }, 
                 role: { en: "Solo Project | Product & Interaction Design", zh: "个人项目 | 产品与交互设计" }, 
                 body: {
-                    en: `<img src="./Magic_cube.png" alt="Magic Cube Detail">`,
-                    zh: `<img src="./Magic_cube.png" alt="Magic Cube Detail">`
+                    en: `<img src="./Works/Projects/Product_Design/Magic_cube.png" alt="Magic Cube Detail">`,
+                    zh: `<img src="./Works/Projects/Product_Design/Magic_cube.png" alt="Magic Cube Detail">`
                 }
             },
             'atmosphere': {
                 title: { en: "Atmosphere x Floor Lamp", zh: "Atmosphere 氛围落地灯" },
                 role: { en: "Product Design", zh: "产品设计" },
-                body: { en: `<img src="./Atmosphere_floor_lamp.png" alt="Atmosphere Floor Lamp Detail">`, zh: `<img src="./Atmosphere_floor_lamp.png" alt="Atmosphere Floor Lamp Detail">` }
+                body: { en: `<img src="./Works/Projects/Product_Design/Atmosphere_floor_lamp.png" alt="Atmosphere Floor Lamp Detail">`, zh: `<img src="./Works/Projects/Product_Design/Atmosphere_floor_lamp.png" alt="Atmosphere Floor Lamp Detail">` }
             },
             'deadwood': {
                 title: { en: "The Chair of Deadwood", zh: "The Chair of Deadwood 枯木椅" },
                 role: { en: "Product Design", zh: "产品设计" },
-                body: { en: `<img src="./The_chair_of_deadwood.png" alt="The Chair of Deadwood Detail">`, zh: `<img src="./The_chair_of_deadwood.png" alt="The Chair of Deadwood Detail">` }
+                body: { en: `<img src="./Works/Projects/Product_Design/The_chair_of_deadwood.png" alt="The Chair of Deadwood Detail">`, zh: `<img src="./Works/Projects/Product_Design/The_chair_of_deadwood.png" alt="The Chair of Deadwood Detail">` }
             },
             'coffeetable': {
                 title: { en: "Geometric Coffee Table", zh: "Geometric 几何咖啡桌" },
                 role: { en: "Product Design", zh: "产品设计" },
-                body: { en: `<img src="./Geometric_Coffee_Table.png" alt="Geometric Coffee Table Detail">`, zh: `<img src="./Geometric_Coffee_Table.png" alt="Geometric Coffee Table Detail">` }
+                body: { en: `<img src="./Works/Projects/Product_Design/Geometric_Coffee_Table.png" alt="Geometric Coffee Table Detail">`, zh: `<img src="./Works/Projects/Product_Design/Geometric_Coffee_Table.png" alt="Geometric Coffee Table Detail">` }
             },
             'fuzhouzhulang': {
                 title: { en: "Fuzhouzhulang (Team)", zh: "福舟逐浪 (团队项目)" },
                 role: { en: "Product Design | Team Project", zh: "产品设计 | 团队项目" },
-                body: { en: `<img src="./Fuzhouzhulang.png" alt="Fuzhouzhulang Detail">`, zh: `<img src="./Fuzhouzhulang.png" alt="Fuzhouzhulang Detail">` }
+                body: { en: `<img src="./Works/Projects/Metalworking_Internship/Fuzhouzhulang.png" alt="Fuzhouzhulang Detail">`, zh: `<img src="./Works/Projects/Metalworking_Internship/Fuzhouzhulang.png" alt="Fuzhouzhulang Detail">` }
             }
         };
 
@@ -806,27 +842,31 @@
         // ==========================================
         
         const archiveData = [
-            { id: 'p1', cat: 'product', title: {en:'Atmosphere x Floor Lamp', zh:'Atmosphere 氛围落地灯'}, type: 'project', projectId: 'atmosphere', src: './Atmosphere_floor_lamp_cover.png' },
-            { id: 'p2', cat: 'product', title: {en:'The Chair of Deadwood', zh:'The Chair of Deadwood 枯木椅'}, type: 'project', projectId: 'deadwood', src: './The_chair_of_deadwood_cover.png' }, 
-            { id: 'p3', cat: 'product', title: {en:'Geometric Coffee Table', zh:'Geometric 几何咖啡桌'}, type: 'project', projectId: 'coffeetable', src: './Geometric_Coffee_Table_cover.png' },
-            { id: 'p4', cat: 'product', title: {en:'Fuzhouzhulang (Team)', zh:'福舟逐浪 (团队)'}, type: 'project', projectId: 'fuzhouzhulang', src: './Fuzhouzhulang_cover.png' },
+            { id: 'p1', cat: 'product', title: {en:'Atmosphere x Floor Lamp', zh:'Atmosphere 氛围落地灯'}, type: 'project', projectId: 'atmosphere', src: './Works/Projects/Product_Design/Atmosphere_floor_lamp_cover.png' },
+            { id: 'p2', cat: 'product', title: {en:'The Chair of Deadwood', zh:'The Chair of Deadwood 枯木椅'}, type: 'project', projectId: 'deadwood', src: './Works/Projects/Product_Design/The_chair_of_deadwood_cover.png' }, 
+            { id: 'p3', cat: 'product', title: {en:'Geometric Coffee Table', zh:'Geometric 几何咖啡桌'}, type: 'project', projectId: 'coffeetable', src: './Works/Projects/Product_Design/Geometric_Coffee_Table_cover.png' },
+            { id: 'p4', cat: 'product', title: {en:'Fuzhouzhulang (Team)', zh:'福舟逐浪 (团队)'}, type: 'project', projectId: 'fuzhouzhulang', src: './Works/Projects/Metalworking_Internship/Fuzhouzhulang_cover.png' },
             
-            { id: 'd1', cat: 'digital', title: {en:'Global Water Resources Visualization', zh:'全球工业国家水资源可视化'}, type: 'web', src: './water_world.html', cover: './water_world_cover.png' },
-            { id: 'd2', cat: 'digital', title: {en:'China Water Resources Visualization', zh:'中国省份水资源可视化'}, type: 'web', src: './water_china.html', cover: './water_china_cover.png' },
-            { id: 'd3', cat: 'digital', title: {en:'AmphiPod System', zh:'AmphiPod 栖游舱系统'}, type: 'video', src: './AmphiPod.MP4' },
+            { id: 'd1', cat: 'digital', title: {en:'Global Water Resources Visualization', zh:'全球工业国家水资源可视化'}, type: 'web', src: './Works/Projects/Digital/Water_resources/water_world.html', cover: './Works/Projects/Digital/Water_resources/water_world_cover.png' },
+            { id: 'd2', cat: 'digital', title: {en:'China Water Resources Visualization', zh:'中国省份水资源可视化'}, type: 'web', src: './Works/Projects/Digital/Water_resources/water_china.html', cover: './Works/Projects/Digital/Water_resources/water_china_cover.png' },
+            { id: 'd3', cat: 'digital', title: {en:'AmphiPod System', zh:'AmphiPod 栖游舱系统'}, type: 'video', src: './Works/Projects/Video/AmphiPod.MP4' },
 
-            { id: 's1', cat: 'software', title: {en:'AutoCAD - Layout Drawing', zh:'AutoCAD 布局布置图'}, type: 'image', src: './Layout_drawing.jpg' },
-            { id: 's2', cat: 'software', title: {en:'AutoCAD - Fan Three Views', zh:'AutoCAD 风扇三视图'}, type: 'image', src: './Fan_three_views.jpg' },
-            { id: 's3', cat: 'software', title: {en:'Adobe Illustrator 01', zh:'色彩联想作业'}, type: 'image', src: './Adobe_Illustrator_01.jpg' },
-            { id: 's4', cat: 'software', title: {en:'Adobe Illustrator 02', zh:'色彩与辅助图形'}, type: 'image', src: './Adobe_Illustrator_02.jpg' },
-            { id: 's5', cat: 'software', title: {en:'Adobe Illustrator 03', zh:'生活中的色彩构成'}, type: 'image', src: './Adobe_Illustrator_03.jpg' },
-            { id: 's6', cat: 'software', title: {en:'Rhino 3D 01', zh:'Rhino 建模 01'}, type: 'image', src: './Rhino_01.jpg' },
-            { id: 's7', cat: 'software', title: {en:'Rhino 3D 02', zh:'Rhino 建模 02'}, type: 'image', src: './Rhino_02.jpg' },
-            { id: 's8', cat: 'software', title: {en:'Rhino 3D 03', zh:'Rhino 建模 03'}, type: 'image', src: './Rhino_03.jpg' },
-            { id: 's9', cat: 'software', title: {en:'Rhino 3D 04', zh:'Rhino 建模 04'}, type: 'image', src: './Rhino_04.jpg' }
+            { id: 's1', cat: 'software', title: {en:'AutoCAD - Layout Drawing', zh:'AutoCAD 布局布置图'}, type: 'image', src: './Works/Coursework/Software/AutoCAD/Layout_drawing.jpg' },
+            { id: 's2', cat: 'software', title: {en:'AutoCAD - Fan Three Views', zh:'AutoCAD 风扇三视图'}, type: 'image', src: './Works/Coursework/Software/AutoCAD/Fan_three_views.jpg' },
+            { id: 's3', cat: 'software', title: {en:'Adobe Illustrator 01', zh:'色彩联想作业'}, type: 'image', src: './Works/Coursework/Software/Adobe_Illustrator/Adobe_Illustrator_01.jpg' },
+            { id: 's4', cat: 'software', title: {en:'Adobe Illustrator 02', zh:'色彩与辅助图形'}, type: 'image', src: './Works/Coursework/Software/Adobe_Illustrator/Adobe_Illustrator_02.jpg' },
+            { id: 's5', cat: 'software', title: {en:'Adobe Illustrator 03', zh:'生活中的色彩构成'}, type: 'image', src: './Works/Coursework/Software/Adobe_Illustrator/Adobe_Illustrator_03.jpg' },
+            { id: 's6', cat: 'software', title: {en:'Rhino 3D 01', zh:'Rhino 建模 01'}, type: 'image', src: './Works/Coursework/Software/Rhino/Rhino_01.jpg' },
+            { id: 's7', cat: 'software', title: {en:'Rhino 3D 02', zh:'Rhino 建模 02'}, type: 'image', src: './Works/Coursework/Software/Rhino/Rhino_02.jpg' },
+            { id: 's8', cat: 'software', title: {en:'Rhino 3D 03', zh:'Rhino 建模 03'}, type: 'image', src: './Works/Coursework/Software/Rhino/Rhino_03.jpg' },
+            { id: 's9', cat: 'software', title: {en:'Rhino 3D 04', zh:'Rhino 建模 04'}, type: 'image', src: './Works/Coursework/Software/Rhino/Rhino_04.jpg' },
+            
+            // 🌟 修正了色彩构成图片的子文件夹路径
+            { id: 's0_color', cat: 'sketch', title: {en:'Color Composition', zh:'色彩构成'}, type: 'image', src: './Works/Coursework/Sketch/Color_Theory/Color_composition.jpg' }
         ];
 
-        function generateBilingualBulk(cat, prefix, count, titleEn, titleZh) {
+        // 🌟 新增了 folder 参数，用于匹配你新的文件归类结构
+        function generateBilingualBulk(cat, folder, prefix, count, titleEn, titleZh) {
             for(let i=1; i<=count; i++) {
                 const num = i.toString().padStart(2, '0');
                 archiveData.push({ 
@@ -834,13 +874,16 @@
                     cat: cat, 
                     title: { en: `${titleEn} ${num}`, zh: `${titleZh} ${num}` }, 
                     type: 'image', 
-                    src: `./${prefix}_${num}.jpg` 
+                    // 动态插入 folder 变量
+                    src: `./Works/Coursework/Sketch/${folder}/${prefix}_${num}.jpg` 
                 });
             }
         }
-        generateBilingualBulk('sketch', 'Design_sketch', 8, 'Design Sketch', '设计素描');
-        generateBilingualBulk('sketch', 'Perspective_drawing', 14, 'Perspective Drawing', '设计透视学');
-        generateBilingualBulk('sketch', 'Engineering_drawing', 3, 'Engineering Drawing', '工程制图');
+        
+        // 🌟 分别为三个类别指定其对应的子文件夹名称
+        generateBilingualBulk('sketch', 'Design_sketch', 'Design_sketch', 8, 'Design Sketch', '设计素描');
+        generateBilingualBulk('sketch', 'Design_Perspective', 'Perspective_drawing', 14, 'Perspective Drawing', '设计透视学');
+        generateBilingualBulk('sketch', 'Engineering_drawing', 'Engineering_drawing', 3, 'Engineering Drawing', '工程制图');
 
         const gridContainer = document.getElementById('archive-grid-container');
 
@@ -927,7 +970,7 @@
         renderArchive('all');
 
         // ==========================================
-        // 7. Lightbox 沉浸式灯箱逻辑 (包含荣誉标签触发)
+        // 7. Lightbox 沉浸式灯箱逻辑 (包含视频联动与荣誉标签)
         // ==========================================
         const lightbox = document.getElementById('lightbox');
         const lbClose = document.getElementById('lightbox-close');
@@ -943,7 +986,35 @@
                 lbContent.innerHTML = `<img src="${data.src}" alt="${titleText}">`;
             } 
             else if (data.type === 'video') {
-                lbContent.innerHTML = `<video src="${data.src}" controls autoplay loop></video>`;
+                lbContent.innerHTML = `<video src="${data.src}" controls autoplay></video>`;
+                
+                const vidElement = lbContent.querySelector('video');
+                
+                // 记录进入视频前的音乐播放状态
+                wasMusicPlayingBeforeVideo = isMusicPlaying;
+                
+                // 监听视频开始播放事件
+                vidElement.addEventListener('play', () => {
+                    if (isMusicPlaying) {
+                        bgMusic.pause();
+                        isMusicPlaying = false;
+                        updateMusicUI(false);
+                    }
+                });
+
+                // 核心恢复音乐逻辑函数
+                const attemptMusicResume = () => {
+                    if (wasMusicPlayingBeforeVideo && !isMusicPlaying) {
+                        bgMusic.play().then(() => {
+                            isMusicPlaying = true;
+                            updateMusicUI(true);
+                        }).catch(e => console.log(e));
+                    }
+                };
+
+                // 监听视频暂停和结束事件
+                vidElement.addEventListener('pause', attemptMusicResume);
+                vidElement.addEventListener('ended', attemptMusicResume);
             } 
             else if (data.type === 'web') {
                 lbContent.innerHTML = `
@@ -977,8 +1048,18 @@
             });
         });
 
+        // 🌟 监听灯箱关闭事件
         lbClose.addEventListener('click', () => {
             lightbox.classList.remove('active');
+            
+            // 如果用户在视频播放中途直接关掉了灯箱，也要尝试恢复背景音乐
+            if (wasMusicPlayingBeforeVideo && !isMusicPlaying) {
+                bgMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    updateMusicUI(true);
+                }).catch(e => console.log(e));
+            }
+
             setTimeout(() => {
                 lbContent.innerHTML = ''; 
                 lenis.start();
