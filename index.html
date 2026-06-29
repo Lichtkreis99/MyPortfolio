@@ -22,6 +22,11 @@
             --border-color: rgba(0, 0, 0, 0.1);
         }
 
+        /* 修复横向滚动条、元素溢出版面的核心属性 */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         @media (hover: hover) and (pointer: fine) { body, a, button, .interactive { cursor: none; } }
 
         body {
@@ -41,7 +46,8 @@
         }
 
         /* === 3. 左侧导航栏 === */
-        .sidebar { position: fixed; top: 0; left: 0; width: 20%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-right: 1px solid var(--border-color); }
+        /* 优化：左侧导航栏改为固定宽度 260px，不再使用 20%，避免屏幕过宽时显得突兀 */
+        .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-right: 1px solid var(--border-color); }
         .logo { position: absolute; top: 40px; left: 40px; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.5px; }
         .nav-capsule { position: relative; background-color: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 40px; padding: 8px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.02); pointer-events: auto; }
         .nav-active-bg { position: absolute; top: 8px; left: 8px; height: 44px; width: 120px; background-color: #000000; border-radius: 30px; z-index: 1; }
@@ -51,14 +57,14 @@
         .nav-text-group { display: flex; align-items: center; justify-content: center; width: 120px; height: 44px; font-size: 0.95rem; font-weight: 500; color: var(--text-muted); transition: color 0.3s ease; }
         .nav-text-group.secondary { position: absolute; left: 120px; color: var(--text-color); }
 
-        /* 🌟 语言切换按钮样式 (提升层级，脱离sidebar影响) */
-        .lang-switch { position: fixed; bottom: 40px; left: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 1001; display: flex; align-items: center; gap: 4px; }
+        /* 🌟 语言切换按钮样式 (z-index 降至900，防止遮挡弹窗的关闭按钮) */
+        .lang-switch { position: fixed; bottom: 40px; left: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 900; display: flex; align-items: center; gap: 4px; }
         .lang-switch:hover { color: var(--text-color); }
         .lang-switch span.active { color: var(--text-color); }
         .lang-separator { opacity: 0.3; font-weight: 400; }
 
-        /* 🎵 音乐切换按钮样式 (含极简动态音波) */
-        .music-switch { position: fixed; bottom: 40px; right: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 1001; display: flex; align-items: center; gap: 8px; }
+        /* 🎵 音乐切换按钮样式 (z-index 降至900) */
+        .music-switch { position: fixed; bottom: 40px; right: 40px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 900; display: flex; align-items: center; gap: 8px; }
         .music-switch:hover, .music-switch.playing { color: var(--text-color); }
         
         .equalizer { display: flex; align-items: flex-end; gap: 2px; height: 14px; margin-bottom: 2px;}
@@ -67,7 +73,6 @@
         .music-switch:hover .eq-bar { background-color: var(--text-color); }
         .music-switch.playing .eq-bar { background-color: var(--text-color); animation: eq-bounce 0.8s infinite ease-in-out alternate; }
         
-        /* 错开每根音波的动画时间，产生律动感 */
         .music-switch.playing .eq-bar:nth-child(1) { animation-delay: 0s; }
         .music-switch.playing .eq-bar:nth-child(2) { animation-delay: 0.3s; }
         .music-switch.playing .eq-bar:nth-child(3) { animation-delay: 0.1s; }
@@ -78,8 +83,9 @@
             100% { height: 14px; }
         }
 
-        /* === 4. 右侧主内容区 (首屏入场动画包装器) === */
-        .main-content { margin-left: 20%; width: 80%; display: flex; flex-direction: column; }
+        /* === 4. 右侧主内容区 === */
+        /* 与 sidebar 的宽度修改联动 */
+        .main-content { margin-left: 260px; width: calc(100% - 260px); display: flex; flex-direction: column; }
         .section-base { min-height: 100vh; padding: 120px 8vw; display: flex; flex-direction: column; justify-content: center; }
         
         .hero-reveal { overflow: hidden; display: block; padding-bottom: 10px; margin-bottom: -10px; }
@@ -90,7 +96,7 @@
         .resume-btn { display: inline-flex; align-items: center; padding: 16px 32px; background-color: #000; color: #fff; border-radius: 40px; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: transform 0.4s ease; width: max-content; }
         .resume-btn:hover { transform: scale(0.98); }
 
-        /* 🌟 经历时间轴样式强化 */
+        /* 🌟 经历时间轴样式 */
         .section-title { font-size: 3rem; font-weight: 700; margin-bottom: 5rem; letter-spacing: -1px; }
         .timeline { position: relative; padding-left: 3rem; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6rem; }
         .timeline-item { position: relative; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 4rem; align-items: start; }
@@ -99,9 +105,7 @@
         .timeline-date { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.8rem; }
         .timeline-university { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.5px; }
         .timeline-major { font-size: 1rem; color: #111; font-weight: 600; margin-bottom: 0.3rem; }
-        
         .timeline-skills { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; margin-bottom: 1.5rem; letter-spacing: 0.2px; }
-        
         .timeline-desc { font-size: 0.95rem; color: #555; line-height: 1.6; margin-bottom: 1.5rem; }
         
         .timeline-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem; }
@@ -118,7 +122,7 @@
         .timeline-real-img { width: 100%; height: 260px; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); transition: transform 0.4s ease; }
         .timeline-images:hover .timeline-real-img { transform: scale(1.03); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
 
-        /* === 5. WORKS 核心展厅 (纯净大图模式) === */
+        /* === 5. WORKS 核心展厅 === */
         #works { padding: 0; background-color: var(--bg-color); }
         .work-item { position: relative; width: 100%; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid var(--border-color); }
         
@@ -137,12 +141,11 @@
         .reveal-wrap { overflow: hidden; display: block; padding-top: 5px; padding-bottom: 10px; margin-top: -5px; }
         .work-tag, .work-role { font-size: 0.8rem; font-weight: 600; padding: 8px 18px; border: 1px solid var(--text-color); border-radius: 40px; color: var(--text-color); background-color: var(--bg-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 
-        /* === 6. ARCHIVE 探索展区 (动态瀑布流) === */
+        /* === 6. ARCHIVE 探索展区 === */
         .archive-section { width: 100%; padding: 120px 6vw 60px 8vw; background-color: var(--bg-color); min-height: 100vh; }
         .archive-header { margin-bottom: 3rem; text-align: center; }
         .archive-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
         
-        /* 分类导航 Filters */
         .archive-filters { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 4rem; }
         .filter-btn { 
             padding: 8px 20px; border: 1px solid #ccc; border-radius: 40px; 
@@ -152,7 +155,6 @@
         .filter-btn:hover { border-color: var(--text-color); color: var(--text-color); }
         .filter-btn.active { background-color: var(--text-color); color: var(--bg-color); border-color: var(--text-color); }
 
-        /* 纯 CSS 瀑布流 (Masonry) */
         .archive-grid { column-count: 3; column-gap: 2rem; width: 100%; }
         .archive-item { break-inside: avoid; margin-bottom: 2rem; position: relative; width: 100%; border-radius: 8px; overflow: hidden; background-color: #fff; border: 1px solid var(--border-color); }
         .archive-img { width: 100%; height: auto; display: block; background-color: #eee; min-height: 150px; object-fit: cover;}
@@ -171,8 +173,8 @@
         .archive-item:hover .archive-overlay { opacity: 1; }
         .archive-item:hover .archive-img { transform: scale(1.05); transition: transform 0.6s ease; }
 
-        /* === 7. 极简页脚模块 (Contact & Footer) === */
-        .footer-section { padding: 80px 8vw 60px 8vw; background-color: var(--bg-color); display: flex; flex-direction: column; border-top: 1px solid var(--border-color); }
+        /* === 7. 页脚模块 === */
+        .footer-section { padding: 80px 8vw 60px 8vw; background-color: var(--bg-color); display: flex; flex-direction: column; border-top: 1px solid var(--border-color); width: 100%; }
         .footer-heading { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 2rem; text-transform: uppercase; }
         .footer-email { font-size: clamp(2.2rem, 5vw, 5.5rem); font-weight: 800; color: var(--text-color); text-decoration: none; display: inline-block; margin-bottom: 6rem; transition: opacity 0.3s ease; word-break: break-all; line-height: 1.1; letter-spacing: -1px; width: max-content; max-width: 100%; }
         .footer-email .arrow { display: inline-block; font-weight: 400; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
@@ -184,7 +186,7 @@
         .back-to-top { background: none; border: none; font-size: 0.85rem; font-weight: 600; color: var(--text-color); cursor: pointer; padding: 0; transition: opacity 0.3s ease; outline: none; }
         .back-to-top:hover { opacity: 0.6; }
 
-        /* === 8. 全屏主项目详情弹窗 (Project Modal) === */
+        /* === 8. 全屏主项目详情弹窗 === */
         .project-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-color); z-index: 999; transform: translateY(100%); display: block; overflow: hidden; } 
         .modal-close-btn { position: absolute; top: 30px; right: 30px; width: 45px; height: 45px; border-radius: 50%; background-color: var(--text-color); color: var(--bg-color); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 300; z-index: 1000; border: none; outline: none; transition: transform 0.3s ease; }
         .modal-close-btn:hover { transform: scale(0.9); }
@@ -204,7 +206,7 @@
         .launch-btn { display: inline-flex; align-items: center; padding: 18px 36px; background-color: #000; color: #fff; text-decoration: none; font-weight: 700; letter-spacing: 1px; border-radius: 50px; transition: transform 0.3s ease; }
         .launch-btn:hover { transform: scale(0.98); background-color: #333; }
 
-        /* === 9. Archive 沉浸式灯箱 (Lightbox) === */
+        /* === 9. Archive 灯箱 === */
         .lightbox-overlay { 
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
             background-color: rgba(255, 255, 255, 0.98); 
@@ -242,10 +244,9 @@
             .nav-text-group { width: 80px; height: 40px; font-size: 0.85rem; }
             .nav-text-group.secondary { left: 80px; }
             
-            /* 移动端调整语言切换按钮至弹窗关闭按钮旁边，防止遮挡或被遮挡 */
-            .lang-switch { top: 30px; right: 80px; bottom: auto; left: auto; }
-            /* 移动端音乐开关置于更右侧 */
-            .music-switch { top: 30px; right: 20px; bottom: auto; left: auto; }
+            /* 优化：移动端语言切换和音乐开关完美错开位置，防重叠 */
+            .lang-switch { top: 25px; right: 130px; bottom: auto; left: auto; }
+            .music-switch { top: 25px; right: 20px; bottom: auto; left: auto; }
 
             .main-content { margin-left: 0; width: 100%; }
             .section-base { padding: 100px 6vw; }
@@ -255,7 +256,9 @@
             .timeline-item::before { left: -1.5rem; width: 10px; height: 10px; top: 6px;}
             
             .work-bg-wrapper { width: 90%; aspect-ratio: 4/3; max-height: 60vh;}
-            .work-meta-floating { bottom: 12%; width: 100%; }
+            
+            /* 优化：解决移动端作品胶囊未居中的问题 */
+            .work-meta-floating { bottom: 12%; width: 100%; display: flex; justify-content: center; left: 0; transform: none; }
             
             .archive-section { padding: 80px 6vw 80px 6vw; }
             .archive-grid { column-count: 2; column-gap: 1rem; } 
@@ -265,9 +268,14 @@
             .footer-email { font-size: clamp(1.8rem, 7vw, 3rem); margin-bottom: 4rem; }
             .footer-bottom { flex-direction: column; align-items: flex-start; }
 
-            .ui-grid { flex-direction: column !important; gap: 1.5rem !important; margin: 2rem 0 !important; }
-            .ui-grid img { width: 100% !important; margin: 0 !important; }
-            .modal-content-wrapper { padding: 80px 6vw; }
+            /* 优化：解决移动端详情页图文未居中的问题 */
+            .modal-content-wrapper { padding: 80px 6vw; text-align: center; }
+            .modal-body { text-align: center; }
+            .modal-body img { margin-left: auto !important; margin-right: auto !important; }
+            
+            /* UI-Grid 修复，配合 JS 数据渲染，解决并排图片过小、排版挤压的问题 */
+            .ui-grid { flex-direction: column !important; gap: 1.5rem !important; margin: 2rem 0 !important; align-items: center !important; }
+            .ui-grid img { width: 100% !important; margin: 0 auto !important; }
             
             .lightbox-web-card { padding: 2rem; width: 90%;}
         }
@@ -546,7 +554,6 @@
             const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
             renderArchive(activeFilter);
 
-            // 当弹窗存在且处于开启状态时，动态刷新弹窗内部的双语内容
             if (currentOpenProjectId) {
                 updateModalContent(currentOpenProjectId);
             }
@@ -556,11 +563,10 @@
         const bgMusic = document.getElementById('bg-music');
         const musicToggle = document.getElementById('music-toggle');
         let isMusicPlaying = false;
-        let wasMusicPlayingBeforeVideo = false; // 用于记录视频播放前的背景音乐状态
+        let wasMusicPlayingBeforeVideo = false;
 
         bgMusic.volume = 0.2;
 
-        // 统一更新UI状态的函数
         function updateMusicUI(playing) {
             if (playing) {
                 musicToggle.classList.add('playing');
@@ -573,7 +579,6 @@
             }
         }
 
-        // 统一切换音乐的函数
         function toggleMusic() {
             if (isMusicPlaying) {
                 bgMusic.pause();
@@ -590,7 +595,6 @@
         }
 
         musicToggle.addEventListener('click', () => {
-            // 如果用户手动点击音乐开关，需要重置“视频前状态”记录，防止逻辑冲突
             wasMusicPlayingBeforeVideo = !isMusicPlaying;
             toggleMusic();
         });
@@ -603,7 +607,7 @@
         gsap.ticker.add((time) => { lenis.raf(time * 1000); });
         gsap.ticker.lagSmoothing(0);
 
-        // 🌟 GSAP 首屏电影级入场动效初始化设置 (加入音乐按钮的入场)
+        // 🌟 GSAP 首屏入场动效初始化
         gsap.set('.logo, .nav-capsule, .lang-switch, .music-switch', { x: -30, opacity: 0 });
         gsap.set('.hero-reveal > *', { y: 80, opacity: 0 });
         
@@ -726,6 +730,7 @@
         const scrollContainer = document.getElementById('modal-scroll-container'); 
         const closeBtn = document.getElementById('modal-close');
         
+        // 优化：补充了 missing 的 class="ui-grid"，确保手机端排版规则生效
         const projectData = {
             'aetherleaf': { 
                 title: { en: "AETHERLEAF", zh: "AETHERLEAF 幻叶" }, 
@@ -757,7 +762,7 @@
                              <h3 style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;">— CORE UI DESIGN EXECUTION —</h3>
                              <p style="color: #888; font-size: 0.95rem; margin-top: 0.5rem; font-weight: 500;">Independent Contribution</p>
                          </div>
-                         <div style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
+                         <div class="ui-grid" style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
                              <img src="./Works/Projects/UI_Design/Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 01">
                              <img src="./Works/Projects/UI_Design/Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 02">
                              <img src="./Works/Projects/UI_Design/Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI Interface 03">
@@ -769,7 +774,7 @@
                              <h3 style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;">— 部分 UI 界面呈现 —</h3>
                              <p style="color: #888; font-size: 0.95rem; margin-top: 0.5rem; font-weight: 500;">个人独立产出部分</p>
                          </div>
-                         <div style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
+                         <div class="ui-grid" style="display: flex; justify-content: space-between; gap: 3%; margin-bottom: 6rem;">
                              <img src="./Works/Projects/UI_Design/Deeptalk_UI_01.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 01">
                              <img src="./Works/Projects/UI_Design/Deeptalk_UI_02.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 02">
                              <img src="./Works/Projects/UI_Design/Deeptalk_UI_03.png" style="width: 31.33%; margin-bottom: 0; box-shadow: 0 15px 35px rgba(0,0,0,0.08);" alt="UI 界面 03">
@@ -817,7 +822,7 @@
         function openProjectModal(projectId) {
             lenis.stop(); 
             scrollContainer.scrollTop = 0; 
-            currentOpenProjectId = projectId; // 记录当前开启状态
+            currentOpenProjectId = projectId;
             
             updateModalContent(projectId);
             
@@ -833,7 +838,7 @@
             gsap.to(modal, { y: "100%", duration: 0.8, ease: "power4.inOut", onComplete: () => { 
                 lenis.start(); 
                 document.getElementById('modal-body-display').innerHTML = ''; 
-                currentOpenProjectId = null; // 清理开启记录
+                currentOpenProjectId = null;
             }});
         });
 
@@ -861,11 +866,9 @@
             { id: 's8', cat: 'software', title: {en:'Rhino 3D 03', zh:'Rhino 建模 03'}, type: 'image', src: './Works/Coursework/Software/Rhino/Rhino_03.jpg' },
             { id: 's9', cat: 'software', title: {en:'Rhino 3D 04', zh:'Rhino 建模 04'}, type: 'image', src: './Works/Coursework/Software/Rhino/Rhino_04.jpg' },
             
-            // 🌟 修正了色彩构成图片的子文件夹路径
             { id: 's0_color', cat: 'sketch', title: {en:'Color Composition', zh:'色彩构成'}, type: 'image', src: './Works/Coursework/Sketch/Color_Theory/Color_composition.jpg' }
         ];
 
-        // 🌟 新增了 folder 参数，用于匹配你新的文件归类结构
         function generateBilingualBulk(cat, folder, prefix, count, titleEn, titleZh) {
             for(let i=1; i<=count; i++) {
                 const num = i.toString().padStart(2, '0');
@@ -874,13 +877,11 @@
                     cat: cat, 
                     title: { en: `${titleEn} ${num}`, zh: `${titleZh} ${num}` }, 
                     type: 'image', 
-                    // 动态插入 folder 变量
                     src: `./Works/Coursework/Sketch/${folder}/${prefix}_${num}.jpg` 
                 });
             }
         }
         
-        // 🌟 分别为三个类别指定其对应的子文件夹名称
         generateBilingualBulk('sketch', 'Design_sketch', 'Design_sketch', 8, 'Design Sketch', '设计素描');
         generateBilingualBulk('sketch', 'Design_Perspective', 'Perspective_drawing', 14, 'Perspective Drawing', '设计透视学');
         generateBilingualBulk('sketch', 'Engineering_drawing', 'Engineering_drawing', 3, 'Engineering Drawing', '工程制图');
@@ -970,7 +971,7 @@
         renderArchive('all');
 
         // ==========================================
-        // 7. Lightbox 沉浸式灯箱逻辑 (包含视频联动与荣誉标签)
+        // 7. Lightbox 沉浸式灯箱逻辑
         // ==========================================
         const lightbox = document.getElementById('lightbox');
         const lbClose = document.getElementById('lightbox-close');
@@ -989,11 +990,8 @@
                 lbContent.innerHTML = `<video src="${data.src}" controls autoplay></video>`;
                 
                 const vidElement = lbContent.querySelector('video');
-                
-                // 记录进入视频前的音乐播放状态
                 wasMusicPlayingBeforeVideo = isMusicPlaying;
                 
-                // 监听视频开始播放事件
                 vidElement.addEventListener('play', () => {
                     if (isMusicPlaying) {
                         bgMusic.pause();
@@ -1002,7 +1000,6 @@
                     }
                 });
 
-                // 核心恢复音乐逻辑函数
                 const attemptMusicResume = () => {
                     if (wasMusicPlayingBeforeVideo && !isMusicPlaying) {
                         bgMusic.play().then(() => {
@@ -1012,7 +1009,6 @@
                     }
                 };
 
-                // 监听视频暂停和结束事件
                 vidElement.addEventListener('pause', attemptMusicResume);
                 vidElement.addEventListener('ended', attemptMusicResume);
             } 
@@ -1034,7 +1030,6 @@
             initCursorInteraction(); 
         }
         
-        // 🌟 监听时间轴上的荣誉标签点击事件，联动唤出 Lightbox
         document.querySelectorAll('.interactive-tag').forEach(tag => {
             tag.addEventListener('click', () => {
                 const src = tag.getAttribute('data-cert');
@@ -1048,11 +1043,9 @@
             });
         });
 
-        // 🌟 监听灯箱关闭事件
         lbClose.addEventListener('click', () => {
             lightbox.classList.remove('active');
             
-            // 如果用户在视频播放中途直接关掉了灯箱，也要尝试恢复背景音乐
             if (wasMusicPlayingBeforeVideo && !isMusicPlaying) {
                 bgMusic.play().then(() => {
                     isMusicPlaying = true;
